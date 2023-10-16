@@ -19,11 +19,19 @@ bl_info = {
     "version" : (0, 0, 1),
     "location" : "",
     "warning" : "",
-    "category" : "Generic"
+    "category" : "3D View"
 }
 
+from . import operators, panels, properties, utils
+
 def register():
-    ...
+    properties.register_properties()
+    panels.register_panels()
+    operators.register_operators()
+    utils.register_utils()
 
 def unregister():
-    ...
+    properties.unregister_properties()
+    panels.unregister_panels()
+    operators.unregister_operators()
+    utils.unregister_utils()

@@ -14,36 +14,26 @@ class ObjectManager:
                 object.select_set(True)
                 context.view_layer.objects.active = object
         return context.view_layer.objects.active
-    
-    def set_camera_tracking(self, context):
-        object = self.select_object()
-        camera = context.scene.camera
+     
+    def set_camera_tracking(self, context, object, camera):
         constraint = camera.constraints.new(type='TRACK_TO')
         constraint.target = object
 
-    def set_light_tracking(self, context):
-        object = self.select_object()
-        light = bpy.data.objects.get('Light')
+    def set_light_tracking(self, context, object, light):
         constraint = light.constraints.new(type='TRACK_TO')
         constraint.target = object
 
-    def reset_object_origin(self, context):
-        object = self.select_object()
+    def reset_object_origin(self, context, object):
         bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_MASS')
         object.location = mathutils.Vector((0, 0, 0))
         object.rotation_euler = mathutils.Vector((0, 0, 0))
     
-    def adjust_light(self):
-        light = bpy.data.objects.get('Light')
+    def adjust_light(self, light):
         light.data.type = 'SUN'
         light.data.energy = 2
         light.data.use_shadow = False
 
-    def adjust_camera_distance(self, context):
-        object = self.select_object()
-        camera = context.scene.camera
-        light = bpy.data.objects.get('Light')
-
+    def adjust_camera_distance(self, context, object, camera, light):
         camera.location = mathutils.Vector((1,1,1))
         light.location = camera.location + mathutils.Vector((1,1,1))
         
@@ -73,8 +63,7 @@ class ObjectManager:
         camera.data.clip_start = clip_start
         camera.data.clip_end = clip_end
     
-    def auto_orient_object(self, context):
-        object = self.select_object()
+    def auto_orient_object(self, context, object):
         rotation_angle = np.deg2rad(90)
         default_angle = mathutils.Vector((0, 0, 0))
         

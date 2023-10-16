@@ -8,7 +8,10 @@ class Opr_auto_execute(bpy.types.Operator):
     bl_label = "Generate Images"
 
     def execute(self, context):
-        object = bpy.context.active_object
+        
+        self.manager = utils.ObjectManager()
+        object = self.manager.select_object(context)
+
         if object:
             bpy.data.objects.remove(object, do_unlink=True)
         self.auto_import(context)
@@ -22,32 +25,39 @@ class Opr_auto_execute(bpy.types.Operator):
                 filepath = os.path.join(object_path, file)
                 bpy.ops.import_mesh.stl(filepath=filepath)
 
-                self.select_object(context)
-                self.select_object(context)
-                self.auto_set_object(context)
-                self.camera_follow_object(context)
-                self.light_follow_object(context)
+                object = self.manager.select_object(context)
+                light = bpy.data.objects.get('Light')
+                camera = context.scene.camera
+
+                self.manager.reset_object_origin(context, object)
+                self.manager.adjust_light(light)
+                self.manager.adjust_camera_distance(context, object, camera, light)
+                self.manager.auto_orient_object(context, object)
+                self.manager.set_camera_tracking(context, object, camera)
+                self.manager.set_light_tracking(context, object, light)
                 bpy.ops.opr.start_render()
-                object = bpy.context.active_object
                 bpy.data.objects.remove(object, do_unlink=True)
 
 
- #-------------------------------------------------------------------------#   
-
-# Operador para aplicar as configuracoes iniciais no objeto
 class Opr_import_object(bpy.types.Operator):
     bl_idname = "opr.import_object"
     bl_label = "Import Object"
 
     def execute(self, context):
-        object = bpy.context.active_object
+        self.manager = utils.ObjectManager()
+        object = self.manager.select_object(context)
+        light = bpy.data.objects.get('Light')
+        camera = context.scene.camera
+
         if object:
             bpy.data.objects.remove(object, do_unlink=True)
         self.manual_import(context)
-        self.select_object(context)
-        self.auto_set_object(context)
-        self.camera_follow_object(context)
-        self.light_follow_object(context)
+        self.manager.reset_object_origin(context, object)
+        self.manager.adjust_light(light)
+        self.manager.adjust_camera_distance(context, object, camera, light)
+        self.manager.auto_orient_object(context, object)
+        self.manager.set_camera_tracking(context, object, camera)
+        self.manager.set_light_tracking(context, object, light)
 
         return {"FINISHED"}
     
@@ -58,23 +68,18 @@ class Opr_import_object(bpy.types.Operator):
             bpy.ops.import_mesh.stl(filepath=file)
 
 
-#-------------------------------------------------------------------------#
-
-# Operador para aplicar as configuracoes iniciais no objeto
 class Opr_default_rotation(bpy.types.Operator):
     bl_idname = "opr.default_rotation"
     bl_label = "Default Rotation"
 
     def execute(self, context):
-        self.select_object(context)
-        self.auto_rotate(context)
+        self.manager = utils.ObjectManager()
+        object = self.manager.select_object(context)
+        self.manager.auto_orient_object(context, object)
 
         return {"FINISHED"}
 
 
-#-------------------------------------------------------------------------#
-
-# Operador para o usuario definir uma rotacao customizada
 class Opr_custom_rotate(bpy.types.Operator):
     bl_idname = "opr.custom_rotate"
     bl_label = "Custom rotate object"
@@ -91,13 +96,14 @@ class Opr_custom_rotate(bpy.types.Operator):
     angle: bpy.props.FloatProperty(name="Angle", default=0)
 
     def execute(self, context):
-        self.select_object(context)
-        self.custom_rotate(context, self.axis, self.angle)
+        self.manager = utils.ObjectManager()
+        object = self.manager.select_object(context)
+        
+        self.custom_rotate(object, self.axis, self.angle)
 
         return {"FINISHED"}
 
-    def custom_rotate(self, context, axis, angle):
-        object = context.object
+    def custom_rotate(self, object, axis, angle):
         if axis == 'X':
             object.rotation_euler.x += angle
         elif axis == 'Y':
@@ -106,16 +112,17 @@ class Opr_custom_rotate(bpy.types.Operator):
             object.rotation_euler.z += angle
 
 
-#-------------------------------------------------------------------------#
-
-# Operador para iniciar a renderização
 class Opr_start_render(bpy.types.Operator):
     bl_idname = "opr.start_render"
     bl_label = "Generate Images"
         
     def execute(self, context):
-        self.select_object(context)
-        self.set_render(context)
+        self.manager = utils.ObjectManager()
+        object = self.manager.select_object(context)
+        light = bpy.data.objects.get('Light')
+        camera = context.scene.camera
+
+        self.set_render(context, object, camera, light)
         self.start_render(context)
         return {"FINISHED"}
 
@@ -131,12 +138,10 @@ class Opr_start_render(bpy.types.Operator):
         newPos = (newX + planet[0], newY + planet[1], moon[2])
         return newPos
 
-    def start_render(self, context):
-        object = context.object
-        camera = context.scene.camera
+    def start_render(self, context, object, camera, light):
+        
         obj_location = object.location
         cam_location = camera.location
-        light = bpy.data.objects.get('Light')
         rotation_steps = context.scene.rotation_steps
         pic_qnt = round(360 / rotation_steps)
 
@@ -147,3 +152,18 @@ class Opr_start_render(bpy.types.Operator):
             bpy.ops.render.render(write_still=1)
             camera.location = self.rotateTo(obj_location, cam_location, rotation_steps)
             light.location = camera.location
+
+
+def register_operators():
+    bpy.utils.register_operator(Opr_auto_execute)
+    bpy.utils.register_operator(Opr_import_object)
+    bpy.utils.register_operator(Opr_default_rotation)
+    bpy.utils.register_operator(Opr_custom_rotate)
+    bpy.utils.register_operator(Opr_start_render)
+
+def unregister_operators():
+    bpy.utils.unregister_operator(Opr_auto_execute)
+    bpy.utils.unregister_operator(Opr_import_object)
+    bpy.utils.unregister_operator(Opr_default_rotation)
+    bpy.utils.unregister_operator(Opr_custom_rotate)
+    bpy.utils.unregister_operator(Opr_start_render)
