@@ -155,15 +155,15 @@ class Opr_start_render(bpy.types.Operator):
 
 
 def register_operators():
-    bpy.utils.register_operator(Opr_auto_execute)
-    bpy.utils.register_operator(Opr_import_object)
-    bpy.utils.register_operator(Opr_default_rotation)
-    bpy.utils.register_operator(Opr_custom_rotate)
-    bpy.utils.register_operator(Opr_start_render)
+    bpy.utils.register_class(Opr_auto_execute)
+    bpy.utils.register_class(Opr_import_object)
+    bpy.utils.register_class(Opr_default_rotation)
+    bpy.utils.register_class(Opr_custom_rotate)
+    bpy.utils.register_class(Opr_start_render)
 
 def unregister_operators():
-    bpy.utils.unregister_operator(Opr_auto_execute)
-    bpy.utils.unregister_operator(Opr_import_object)
-    bpy.utils.unregister_operator(Opr_default_rotation)
-    bpy.utils.unregister_operator(Opr_custom_rotate)
-    bpy.utils.unregister_operator(Opr_start_render)
+    bpy.utils.unregister_class(Opr_auto_execute)
+    bpy.utils.unregister_class(Opr_import_object)
+    bpy.utils.unregister_class(Opr_default_rotation)
+    bpy.utils.unregister_class(Opr_custom_rotate)
+    bpy.utils.unregister_class(Opr_start_render)
