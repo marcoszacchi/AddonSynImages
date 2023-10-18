@@ -22,16 +22,19 @@ bl_info = {
     "category" : "3D View"
 }
 
-from . import operators, panels, properties, utils
+import bpy
+from . import operators, properties, panels, utils
 
 def register():
     properties.register_properties()
     panels.register_panels()
     operators.register_operators()
-    utils.register_utils()
 
 def unregister():
     properties.unregister_properties()
     panels.unregister_panels()
     operators.unregister_operators()
-    utils.unregister_utils()
+
+    
+if __name__ == "__main__":
+    register()

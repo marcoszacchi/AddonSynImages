@@ -2,8 +2,8 @@ import bpy
 import mathutils
 import numpy as np
 
-class ObjectManager:
-    def select_object(self, context):
+class SetScene:
+    def selector(self, context):
         fixed_object_names = ['Camera', 'Light']
 
         for object in bpy.data.objects:
@@ -14,26 +14,26 @@ class ObjectManager:
                 object.select_set(True)
                 context.view_layer.objects.active = object
         return context.view_layer.objects.active
-     
-    def set_camera_tracking(self, context, object, camera):
+
+    def set_camera_tracking(self, object, camera):
         constraint = camera.constraints.new(type='TRACK_TO')
         constraint.target = object
 
-    def set_light_tracking(self, context, object, light):
+    def set_light_tracking(self, object, light):
         constraint = light.constraints.new(type='TRACK_TO')
         constraint.target = object
 
-    def reset_object_origin(self, context, object):
+    def set_origin(self, object):
         bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_MASS')
         object.location = mathutils.Vector((0, 0, 0))
         object.rotation_euler = mathutils.Vector((0, 0, 0))
     
-    def adjust_light(self, light):
+    def set_light(self, light):
         light.data.type = 'SUN'
         light.data.energy = 2
         light.data.use_shadow = False
 
-    def adjust_camera_distance(self, context, object, camera, light):
+    def fit_camera_distance(self, context, object, camera, light):
         camera.location = mathutils.Vector((1,1,1))
         light.location = camera.location + mathutils.Vector((1,1,1))
         
@@ -63,7 +63,7 @@ class ObjectManager:
         camera.data.clip_start = clip_start
         camera.data.clip_end = clip_end
     
-    def auto_orient_object(self, context, object):
+    def auto_rotate(self, object):
         rotation_angle = np.deg2rad(90)
         default_angle = mathutils.Vector((0, 0, 0))
         
@@ -99,11 +99,9 @@ class ObjectManager:
             elif second_max_dim == "y":
                 object.rotation_euler.x= rotation_angle
                 object.rotation_euler.z = rotation_angle
-
-
-def register_utils():
-    bpy.utils.register_class(ObjectManager)
-
-def unregister_utils():
-    bpy.utils.unregister_class(ObjectManager)
-    
+        
+    def auto_set(self, context, object, camera, light):
+        self.set_origin(object)
+        self.set_light(light)
+        self.fit_camera_distance(context, object, camera, light)
+        self.auto_rotate(object)
