@@ -99,6 +99,15 @@ class SetScene:
             elif second_max_dim == "y":
                 object.rotation_euler.x= rotation_angle
                 object.rotation_euler.z = rotation_angle
+    
+    def rotate_to(self, obj_location, cam_location, angle):
+        angle = np.deg2rad(angle)
+        posX = cam_location[0] - obj_location[0]
+        posY = cam_location[1] - obj_location[1]
+        newX = posX * np.cos(angle) - posY * np.sin(angle)
+        newY = posX * np.sin(angle) + posY * np.cos(angle)
+        newPos = (newX + obj_location[0], newY + obj_location[1], cam_location[2])
+        return newPos            
         
     def auto_set(self, context, object, camera, light):
         self.set_origin(object)

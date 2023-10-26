@@ -21,7 +21,6 @@ class VIEW3D_PT_synthetic_image_generator(bpy.types.Panel):
         row1.prop(scene, "auto_exec", text="Generate from Directory", icon=icon, emboss=False)
 
         if scene.auto_exec:
-
             row = box1.row()
             row.label(text="Files Path", icon='FOLDER_REDIRECT')
             row = box1.row()
@@ -36,7 +35,6 @@ class VIEW3D_PT_synthetic_image_generator(bpy.types.Panel):
         row2.prop(scene, "manual_exec", text="Generate from File", icon=icon, emboss=False)
 
         if scene.manual_exec:
-
             row = box2.row()
             row.label(text="File Path", icon='FOLDER_REDIRECT')
             row = box2.row()
@@ -95,16 +93,13 @@ class VIEW3D_PT_synthetic_image_generator(bpy.types.Panel):
         col1.label(text="Steps", icon='SPHERE')
         col2.prop(scene, "rotation_steps", text="")
 
-        row = box_out.row()
-        if scene.auto_exec:
-            row = box_out.row()
-            row.operator(operators.Opr_auto_execute.bl_idname, icon='RESTRICT_RENDER_OFF')
-            row = box_out.row()
+        row1 = box_out.row()
+        row1 = box_out.row()
+        row1.operator(operators.Opr_auto_execute.bl_idname, icon='RESTRICT_RENDER_OFF')
 
-        if scene.manual_exec:
-            row = box_out.row()
-            row.operator(operators.Opr_start_render.bl_idname, icon='RESTRICT_RENDER_OFF')
-            row = box_out.row()
+        row2 = box_out.row()
+        row2.operator(operators.Opr_start_render.bl_idname, icon='RESTRICT_RENDER_OFF')
+        row2 = box_out.row()
 
 def register_panels():
     bpy.utils.register_class(VIEW3D_PT_synthetic_image_generator)

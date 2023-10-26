@@ -3,39 +3,6 @@ import os
 import numpy as np
 from . import utils
 
-class Opr_auto_execute(bpy.types.Operator):
-    bl_idname = "opr.auto_execute"
-    bl_label = "Generate Images"
-
-    def execute(self, context):
-        set_scene = utils.SetScene()
-        object = set_scene.selector(context)
-        
-        if object:
-            bpy.data.objects.remove(object, do_unlink=True)
-        self.auto_import(context)
-        return {"FINISHED"}
-    
-    def auto_import(self, context):
-        set_scene = utils.SetScene()
-        camera = context.scene.camera
-        light = bpy.data.objects.get('Light')
-        
-        object_path = context.scene.custom_properties.import_dir
-        
-        for file in os.listdir(object_path):
-            if file.endswith(".stl") or file.endswith(".STL"):
-                filepath = os.path.join(object_path, file)
-                bpy.ops.import_mesh.stl(filepath=filepath)
-                
-                object = set_scene.selector(context)
-                set_scene.auto_set(context, object, camera, light)
-                set_scene.set_camera_tracking(object, camera)
-                set_scene.set_light_tracking(object, light)
-                bpy.ops.opr.start_render()
-                bpy.data.objects.remove(object, do_unlink=True)
-
-
 class Opr_import_object(bpy.types.Operator):
     bl_idname = "opr.import_object"
     bl_label = "Import Object"
@@ -108,7 +75,7 @@ class Opr_custom_rotate(bpy.types.Operator):
 
 class Opr_start_render(bpy.types.Operator):
     bl_idname = "opr.start_render"
-    bl_label = "Generate Images"
+    bl_label = "Synthesize from File"
         
     def execute(self, context):
         set_scene = utils.SetScene()
@@ -123,39 +90,66 @@ class Opr_start_render(bpy.types.Operator):
     def set_render(self, context):
         context.scene.render.image_settings.file_format = 'PNG'
 
-    def rotate_to(self, planet, moon, angle):
-        angle = np.deg2rad(angle)
-        posX = moon[0] - planet[0]
-        posY = moon[1] - planet[1]
-        newX = posX * np.cos(angle) - posY * np.sin(angle)
-        newY = posX * np.sin(angle) + posY * np.cos(angle)
-        newPos = (newX + planet[0], newY + planet[1], moon[2])
-        return newPos
-
     def start_render(self, context, object, camera, light):
+        set_scene = utils.SetScene()
         obj_location = object.location
         cam_location = camera.location
         rotation_steps = context.scene.custom_properties.rotation_steps
         pic_qnt = round(360 / rotation_steps)
 
         image_path = context.scene.custom_properties.image_dir
+        object_path = f'{image_path}/{object.name}'
 
         for pic in range(pic_qnt):
-            context.scene.render.filepath = f'{image_path}/{object.name}/{pic + 1}'
+            context.scene.render.filepath = f'{object_path}/{pic + 1}'
             bpy.ops.render.render(write_still=1)
-            camera.location = self.rotate_to(obj_location, cam_location, rotation_steps)
+            camera.location = set_scene.rotate_to(obj_location, cam_location, rotation_steps)
             light.location = camera.location
+        
+
+class Opr_auto_execute(bpy.types.Operator):
+    bl_idname = "opr.auto_execute"
+    bl_label = "Synthesize from Directory"
+
+    def execute(self, context):
+        set_scene = utils.SetScene()
+        object = set_scene.selector(context)
+        
+        if object:
+            bpy.data.objects.remove(object, do_unlink=True)
+        self.auto_import(context)
+        return {"FINISHED"}
+    
+    def auto_import(self, context):
+        set_scene = utils.SetScene()
+        camera = context.scene.camera
+        light = bpy.data.objects.get('Light')
+        
+        object_path = context.scene.custom_properties.import_dir
+        
+        for file in os.listdir(object_path):
+            if file.endswith(".stl") or file.endswith(".STL"):
+                filepath = os.path.join(object_path, file)
+                bpy.ops.import_mesh.stl(filepath=filepath)
+                
+                object = set_scene.selector(context)
+                set_scene.auto_set(context, object, camera, light)
+                set_scene.set_camera_tracking(object, camera)
+                set_scene.set_light_tracking(object, light)
+                bpy.ops.opr.start_render()
+                bpy.data.objects.remove(object, do_unlink=True)
+
 
 def register_operators():
-    bpy.utils.register_class(Opr_auto_execute)
     bpy.utils.register_class(Opr_import_object)
     bpy.utils.register_class(Opr_default_rotation)
     bpy.utils.register_class(Opr_custom_rotate)
     bpy.utils.register_class(Opr_start_render)
+    bpy.utils.register_class(Opr_auto_execute)
 
 def unregister_operators():
-    bpy.utils.unregister_class(Opr_auto_execute)
     bpy.utils.unregister_class(Opr_import_object)
     bpy.utils.unregister_class(Opr_default_rotation)
     bpy.utils.unregister_class(Opr_custom_rotate)
     bpy.utils.unregister_class(Opr_start_render)
+    bpy.utils.unregister_class(Opr_auto_execute)
