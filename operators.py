@@ -5,7 +5,7 @@ from . import utils
 
 class Opr_import_object(bpy.types.Operator):
     bl_idname = "opr.import_object"
-    bl_label = "Import Object"
+    bl_label = "Import STL"
 
     def execute(self, context):
         set_scene = utils.SetScene()

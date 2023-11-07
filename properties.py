@@ -1,8 +1,11 @@
 import bpy
 
 class CustomProperties(bpy.types.PropertyGroup):
-    auto_exec : bpy.props.BoolProperty(default=False)
-    manual_exec : bpy.props.BoolProperty(default=False)
+    auto_exec: bpy.props.BoolProperty(default=False)
+    manual_exec: bpy.props.BoolProperty(default=False)
+    manual_exec_set: bpy.props.BoolProperty(default=False)
+    settings: bpy.props.BoolProperty(default=False)
+    export: bpy.props.BoolProperty(default=False)
 
     import_dir : bpy.props.StringProperty(
         name="",
