@@ -22,9 +22,11 @@ class VIEW3D_PT_synthetic_image_generator(bpy.types.Panel):
 
         if scene.auto_exec:
             row = box1.row()
-            row.label(text="STL Directory", icon='FOLDER_REDIRECT')
-            row = box1.row()
-            row.prop(scene, "import_dir")
+            col1 = row.column()
+            col1.scale_x = 1.4
+            col1.label(text="STL Directory", icon='FOLDER_REDIRECT')
+            col2 = row.column()
+            col2.prop(scene, "import_dir")
             row = box1.row()
         
 
@@ -35,9 +37,11 @@ class VIEW3D_PT_synthetic_image_generator(bpy.types.Panel):
 
         if scene.manual_exec:
             row = box2.row()
-            row.label(text="STL File", icon='FOLDER_REDIRECT')
-            row = box2.row()
-            row.prop(scene, "file_dir")
+            col1 = row.column()
+            col1.scale_x = 1.4
+            col1.label(text="STL File", icon='FOLDER_REDIRECT')
+            col2 = row.column()
+            col2.prop(scene, "file_dir")
             
             row = box2.row()
             row.operator(operators.Opr_import_object.bl_idname)
@@ -86,17 +90,29 @@ class VIEW3D_PT_synthetic_image_generator(bpy.types.Panel):
 
 
         box3 = layout.box()
-        icon = 'TRIA_DOWN' if scene.settings else 'TRIA_RIGHT'
+        icon = 'TRIA_DOWN' if scene.transformations else 'TRIA_RIGHT'
         row = box3.row()
-        row.prop(scene, "settings", text="Synthesis Settings", icon=icon, emboss=False)
+        row.prop(scene, "transformations", text="Transformations", icon=icon, emboss=False)
 
-        if scene.settings:
+        if scene.transformations:
             
             row = box3.row()
             col1 = row.column()
+            col1.label(text="Steps", icon='SPHERE')
             col2 = row.column()
-            col1.label(text="Camera Steps", icon='SPHERE')
             col2.prop(scene, "rotation_steps", text="")
+            
+            row = box3.row()
+            col1 = row.column()
+            col1.label(text="Scaling", icon='VIEWZOOM')
+            col2 = row.column()
+            col2.prop(scene, "scaling_percentage", text="%")
+
+            row = box3.row()
+            col1 = row.column()
+            col1.label(text="Translation", icon='ORIENTATION_VIEW')
+            col2 = row.column()
+            col2.prop(scene, "translation_percentage", text="%")
         
 
         box4 = layout.box()

@@ -4,7 +4,7 @@ class CustomProperties(bpy.types.PropertyGroup):
     auto_exec: bpy.props.BoolProperty(default=False)
     manual_exec: bpy.props.BoolProperty(default=False)
     manual_exec_set: bpy.props.BoolProperty(default=False)
-    settings: bpy.props.BoolProperty(default=False)
+    transformations: bpy.props.BoolProperty(default=False)
     export: bpy.props.BoolProperty(default=False)
 
     import_dir : bpy.props.StringProperty(
@@ -36,6 +36,20 @@ class CustomProperties(bpy.types.PropertyGroup):
         min=1,
         max=360,
         default=36,
+    )
+
+    scaling_percentage : bpy.props.IntProperty(
+        name="Scaling",
+        min=0,
+        max=100,
+        default=0,
+    )
+
+    translation_percentage : bpy.props.IntProperty(
+        name="Translation",
+        min=0,
+        max=100,
+        default=0,
     )
 
 def register_properties():

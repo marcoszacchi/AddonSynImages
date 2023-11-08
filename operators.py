@@ -91,14 +91,17 @@ class Opr_start_render(bpy.types.Operator):
         context.scene.render.image_settings.file_format = 'PNG'
 
     def start_render(self, context, object, camera, light):
+        scene = context.scene.custom_properties
+        
         set_scene = utils.SetScene()
         obj_location = object.location
         cam_location = camera.location
-        rotation_steps = context.scene.custom_properties.rotation_steps
+        rotation_steps = scene.rotation_steps
         pic_qnt = round(360 / rotation_steps)
 
-        image_path = context.scene.custom_properties.image_dir
+        image_path = scene.image_dir
         object_path = f'{image_path}/{object.name}'
+        
 
         for pic in range(pic_qnt):
             context.scene.render.filepath = f'{object_path}/{pic + 1}'
