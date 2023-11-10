@@ -98,18 +98,21 @@ class VIEW3D_PT_synthetic_image_generator(bpy.types.Panel):
             
             row = box3.row()
             col1 = row.column()
+            col1.scale_x = 1.2
             col1.label(text="Steps", icon='SPHERE')
             col2 = row.column()
             col2.prop(scene, "rotation_steps", text="")
             
             row = box3.row()
             col1 = row.column()
+            col1.scale_x = 1.2
             col1.label(text="Scaling", icon='VIEWZOOM')
             col2 = row.column()
             col2.prop(scene, "scaling_percentage", text="%")
 
             row = box3.row()
             col1 = row.column()
+            col1.scale_x = 1.2
             col1.label(text="Translation", icon='ORIENTATION_VIEW')
             col2 = row.column()
             col2.prop(scene, "translation_percentage", text="%")
@@ -130,8 +133,8 @@ class VIEW3D_PT_synthetic_image_generator(bpy.types.Panel):
             row.operator(operators.Opr_auto_execute.bl_idname, icon='RESTRICT_RENDER_OFF')
             
             row = box4.row()
-
             row.operator(operators.Opr_start_render.bl_idname, icon='RESTRICT_RENDER_OFF')
+            
             row = box4.row()
         
 
