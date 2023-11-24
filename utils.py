@@ -57,28 +57,22 @@ class SetObject:
         object.location = mathutils.Vector((0, 0, 0))
         object.rotation_euler = mathutils.Vector((0, 0, 0))
 
-class SetCamera:
-    def rotate_pos(self, obj_location, cam_location, angle):
-        angle = np.deg2rad(angle)
-        posX = cam_location[0] - obj_location[0]
-        posY = cam_location[1] - obj_location[1]
-        newX = posX * np.cos(angle) - posY * np.sin(angle)
-        newY = posX * np.sin(angle) + posY * np.cos(angle)
-        newPos = (newX + obj_location[0], newY + obj_location[1], cam_location[2])
-        return newPos    
+    def scaling(self, object, scaling_percentage):
+        scaling_factor = 1.0 + (scaling_percentage / 100)
+        scaling_tuple = (scaling_factor, scaling_factor, scaling_factor)
+        object.scale = scaling_tuple
 
-    def fit_camera_distance(self, context, object, camera, light):
-        camera.location = mathutils.Vector((1,1,1))
-        light.location = camera.location + mathutils.Vector((1,1,1))
+class SetCamera:
+    def fit_distance(self, context, object, camera, light):
+        distance = 1.2
+        camera.location = mathutils.Vector((0,distance,0))
+        light.location = camera.location
         
         bounding_box = object.bound_box
         min_coords = mathutils.Vector(bounding_box[0])
         max_coords = mathutils.Vector(bounding_box[6])
-        
-        scaled_min_coords = min_coords * object.scale
-        scaled_max_coords = max_coords * object.scale
 
-        diagonal = (scaled_max_coords - scaled_min_coords).length
+        diagonal = (max_coords - min_coords).length
         
         aspect_ratio = context.scene.render.resolution_x / context.scene.render.resolution_y
         camera_angle = camera.data.angle
@@ -91,11 +85,6 @@ class SetCamera:
         camera_direction = (camera.location - object.location).normalized()
         camera.location = object.location + camera_direction * distance_camera
         light.location = camera.location
-
-        clip_start = 0.1
-        clip_end = camera.location[0] * 4
-        camera.data.clip_start = clip_start
-        camera.data.clip_end = clip_end
 
 class SetTracking:
     def set_camera_tracking(self, object, camera):
@@ -110,4 +99,4 @@ class SetLight:
     def set_light(self, light):
         light.data.type = 'SUN'
         light.data.energy = 2
-        light.data.use_shadow = False   
+        light.data.use_shadow = False

@@ -14,21 +14,26 @@ class Opr_import_object(bpy.types.Operator):
     set_light = utils.SetLight()
 
     def execute(self, context):
+        scene = context.scene.custom_properties
         object = self.set_object.selector(context)
         camera = context.scene.camera
         light = bpy.data.objects.get('Light')
-        file = context.scene.custom_properties.file_dir
-        
+        file = scene.file_dir
+
         if object:
             bpy.data.objects.remove(object, do_unlink=True)
         
+        scene.camera_height = 0        
         self.manual_import(file)
         object = self.set_object.selector(context)
         
         if object:
+            scene.object_rotation_x = np.rad2deg(object.rotation_euler.x)
+            scene.object_rotation_y = np.rad2deg(object.rotation_euler.y)
+            scene.object_rotation_z = np.rad2deg(object.rotation_euler.z)
             self.set_object.set_origin(object)
-            self.set_object.auto_rotate(object)
-            self.set_camera.fit_camera_distance(context, object, camera, light)
+            bpy.ops.opr.default_rotation()
+            self.set_camera.fit_distance(context, object, camera, light)
             self.set_light.set_light(light)
             self.set_tracking.set_camera_tracking(object, camera)
             self.set_tracking.set_light_tracking(object, light)
@@ -47,41 +52,15 @@ class Opr_default_rotation(bpy.types.Operator):
     set_object = utils.SetObject()
 
     def execute(self, context):
+        scene = context.scene.custom_properties
         object = self.set_object.selector(context)
         self.set_object.auto_rotate(object)
+        scene.camera_position_angle = 0
+        scene.object_rotation_x = np.rad2deg(object.rotation_euler.x)
+        scene.object_rotation_y = np.rad2deg(object.rotation_euler.y)
+        scene.object_rotation_z = np.rad2deg(object.rotation_euler.z)
 
         return {"FINISHED"}
-
-
-class Opr_custom_rotate(bpy.types.Operator):
-    bl_idname = "opr.custom_rotate"
-    bl_label = "Custom rotate object"
-
-    set_object = utils.SetObject()
-
-    axis: bpy.props.EnumProperty(
-        name="Axis",
-        description="Axis to Rotate",
-        items=[('X', "X", ""), ('Y', "Y", ""), ('Z', "Z", "")],
-        default='X'
-    )
-
-    angle: bpy.props.FloatProperty(name="Angle", default=0)
-
-    def execute(self, context):
-        object = self.set_object.selector(context)
-        self.custom_rotate(object, self.axis, self.angle)
-
-        return {"FINISHED"}
-
-    def custom_rotate(self, object, axis, angle):
-        if axis == 'X':
-            object.rotation_euler.x += angle
-        elif axis == 'Y':
-            object.rotation_euler.y += angle
-        elif axis == 'Z':
-            object.rotation_euler.z += angle
-
 
 class Opr_start_render(bpy.types.Operator):
     bl_idname = "opr.start_render"
@@ -91,34 +70,46 @@ class Opr_start_render(bpy.types.Operator):
     set_camera = utils.SetCamera()
         
     def execute(self, context):
+        
         object = self.set_object.selector(context)
         camera = context.scene.camera
         light = bpy.data.objects.get('Light')
-        
-        self.set_render(context)
-        self.start_render(context, object, camera, light)
-        return {"FINISHED"}
-
-    def set_render(self, context):
         context.scene.render.image_settings.file_format = 'PNG'
+        self.start_render(context, object, camera, light)
+        
+        return {"FINISHED"}
 
     def start_render(self, context, object, camera, light):
         scene = context.scene.custom_properties
-
-        obj_location = object.location
-        cam_location = camera.location
-        rotation_steps = scene.rotation_steps
-        pic_qnt = round(360 / rotation_steps)
-
-        image_path = scene.image_dir
-        object_path = f'{image_path}/{object.name}'
-
-        for pic in range(pic_qnt):
-            context.scene.render.filepath = f'{object_path}/{pic + 1}'
-            bpy.ops.render.render(write_still=1)
-            camera.location = self.set_camera.rotate_pos(obj_location, cam_location, rotation_steps)
-            light.location = camera.location
+        trajectory = scene.cam_trajectory
+        h_angle = scene.horizontal_rotation_steps
+        v_angle = scene.vertical_rotation_steps
         
+        if trajectory == 'circular_trajectory':
+            h_qnt = round(360/h_angle)
+            
+            for pic in range (h_qnt):
+                scene.camera_position_angle = (pic + 1) * h_angle
+                light.location = camera.location
+                context.scene.render.filepath = f'{scene.image_dir}/{object.name}/{scene.camera_position_angle:.2f}{"d"}_{scene.camera_height_angle:.2f}{"d"}'    
+                bpy.ops.render.render(write_still=1)
+            scene.camera_position_angle = 0
+        
+        if trajectory == 'spherical_trajectory':
+            h_qnt = round(360/h_angle)
+            v_qnt = round((180/v_angle)/2)
+            
+            for h_pic in range (h_qnt):
+                scene.camera_position_angle = (h_pic + 1) * h_angle
+                
+                for v_pic in range(-v_qnt, v_qnt):
+                    scene.camera_height_angle = (v_pic) * v_angle
+                    light.location = camera.location
+                    context.scene.render.filepath = f'{scene.image_dir}/{object.name}/{scene.camera_position_angle:.2f}{"d"}_{scene.camera_height_angle:.2f}{"d"}'    
+                    bpy.ops.render.render(write_still=1)
+
+            scene.camera_position_angle = 0
+            scene.camera_height_angle = 0
 
 class Opr_auto_execute(bpy.types.Operator):
     bl_idname = "opr.auto_execute"
@@ -157,18 +148,17 @@ class Opr_auto_execute(bpy.types.Operator):
                 self.set_tracking.set_light_tracking(object, light)
                 bpy.ops.opr.start_render()
                 bpy.data.objects.remove(object, do_unlink=True)
+    
 
 
 def register_operators():
     bpy.utils.register_class(Opr_import_object)
     bpy.utils.register_class(Opr_default_rotation)
-    bpy.utils.register_class(Opr_custom_rotate)
     bpy.utils.register_class(Opr_start_render)
     bpy.utils.register_class(Opr_auto_execute)
 
 def unregister_operators():
     bpy.utils.unregister_class(Opr_import_object)
     bpy.utils.unregister_class(Opr_default_rotation)
-    bpy.utils.unregister_class(Opr_custom_rotate)
     bpy.utils.unregister_class(Opr_start_render)
     bpy.utils.unregister_class(Opr_auto_execute)

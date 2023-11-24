@@ -23,18 +23,19 @@ bl_info = {
 }
 
 import bpy
-from . import operators, properties, panels, utils
+from . import operators, properties, panels, handler
 
 def register():
     properties.register_properties()
     panels.register_panels()
     operators.register_operators()
+    handler.register_handler()
 
 def unregister():
     properties.unregister_properties()
     panels.unregister_panels()
     operators.unregister_operators()
+    handler.unregister_handler()
 
-    
 if __name__ == "__main__":
     register()
