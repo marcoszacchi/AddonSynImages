@@ -76,9 +76,9 @@ class CustomProperties(bpy.types.PropertyGroup):
 
     camera_height_angle : bpy.props.FloatProperty(
         name="Camera Height",
-        min = -90,
-        max = 89.9999,
-        default=0,
+        min = 0.0001,
+        max = 180,
+        default=90,
     )
 
     scaling_percentage : bpy.props.IntProperty(

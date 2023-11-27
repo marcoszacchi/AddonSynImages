@@ -101,14 +101,7 @@ class VIEW3D_PT_synthetic_image_generator(bpy.types.Panel):
                 row = box3.row()
                 col1 = row.column()
                 col1.scale_x = 1.2
-                col1.label(text="Camera Position", icon='EMPTY_SINGLE_ARROW')
-                col2 = row.column()
-                col2.prop(scene, "camera_position_angle", text="")
-
-                row = box3.row()
-                col1 = row.column()
-                col1.scale_x = 1.2
-                col1.label(text="Camera Height", icon='EMPTY_SINGLE_ARROW')
+                col1.label(text="Phi", icon='ORIENTATION_GLOBAL')
                 col2 = row.column()
                 col2.prop(scene, "camera_height_angle", text="")
 

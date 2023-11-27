@@ -17,7 +17,7 @@ def update_camera_position(scene, context):
     camera = context.scene.camera
 
     r = np.sqrt((camera.location.x**2) + (camera.location.y**2) + (camera.location.z**2))
-    phi = np.deg2rad(90 - scene.camera_height_angle)
+    phi = np.deg2rad(scene.camera_height_angle)
     theta = np.deg2rad(90 + scene.camera_position_angle)
 
     camera.location.x = r * np.sin(phi) * np.cos(theta)

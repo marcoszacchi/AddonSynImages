@@ -88,28 +88,28 @@ class Opr_start_render(bpy.types.Operator):
         if trajectory == 'circular_trajectory':
             h_qnt = round(360/h_angle)
             
-            for pic in range (h_qnt):
-                scene.camera_position_angle = (pic + 1) * h_angle
-                light.location = camera.location
-                context.scene.render.filepath = f'{scene.image_dir}/{object.name}/{scene.camera_position_angle:.2f}{"d"}_{scene.camera_height_angle:.2f}{"d"}'    
-                bpy.ops.render.render(write_still=1)
+            for h_pic in range(h_qnt):
+                    scene.camera_position_angle = h_pic * h_angle
+                    light.location = camera.location
+                    context.scene.render.filepath = f'{scene.image_dir}/{object.name}/{scene.camera_position_angle:.2f}{"d"}_{scene.camera_height_angle:.2f}{"d"}'    
+                    bpy.ops.render.render(write_still=1)
             scene.camera_position_angle = 0
         
         if trajectory == 'spherical_trajectory':
             h_qnt = round(360/h_angle)
-            v_qnt = round((180/v_angle)/2)
-            
-            for h_pic in range (h_qnt):
-                scene.camera_position_angle = (h_pic + 1) * h_angle
+            v_qnt = round(180/v_angle)
+
+            for v_pic in range(v_qnt + 1):
+                scene.camera_height_angle = v_pic * v_angle
                 
-                for v_pic in range(-v_qnt, v_qnt):
-                    scene.camera_height_angle = (v_pic) * v_angle
+                for h_pic in range(h_qnt):
+                    scene.camera_position_angle = h_pic * h_angle
                     light.location = camera.location
                     context.scene.render.filepath = f'{scene.image_dir}/{object.name}/{scene.camera_position_angle:.2f}{"d"}_{scene.camera_height_angle:.2f}{"d"}'    
                     bpy.ops.render.render(write_still=1)
 
             scene.camera_position_angle = 0
-            scene.camera_height_angle = 0
+            scene.camera_height_angle = 90
 
 class Opr_auto_execute(bpy.types.Operator):
     bl_idname = "opr.auto_execute"
