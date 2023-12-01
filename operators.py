@@ -102,7 +102,7 @@ class Opr_start_render(bpy.types.Operator):
             for v_pic in range(v_qnt + 1):
                 scene.camera_height_angle = v_pic * v_angle
                 
-                for h_pic in range(h_qnt + 1):
+                for h_pic in range(h_qnt):
                     scene.camera_position_angle = h_pic * h_angle
                     light.location = camera.location
                     context.scene.render.filepath = f'{scene.image_dir}/{object.name}_{"spherical"}/{scene.camera_position_angle:.2f}{"d"}_{scene.camera_height_angle:.2f}{"d"}'    
