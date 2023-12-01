@@ -64,7 +64,7 @@ class SetObject:
 
 class SetCamera:
     def fit_distance(self, context, object, camera, light):
-        distance = 1.2
+        distance = 2
         camera.location = mathutils.Vector((0,distance,0))
         light.location = camera.location
         

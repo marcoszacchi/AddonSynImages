@@ -44,7 +44,6 @@ class Opr_import_object(bpy.types.Operator):
         if file.endswith(".stl") or file.endswith(".STL"):
             bpy.ops.import_mesh.stl(filepath=file)
 
-
 class Opr_default_rotation(bpy.types.Operator):
     bl_idname = "opr.default_rotation"
     bl_label = "Default Rotation"
@@ -91,9 +90,10 @@ class Opr_start_render(bpy.types.Operator):
             for h_pic in range(h_qnt):
                     scene.camera_position_angle = h_pic * h_angle
                     light.location = camera.location
-                    context.scene.render.filepath = f'{scene.image_dir}/{object.name}/{scene.camera_position_angle:.2f}{"d"}_{scene.camera_height_angle:.2f}{"d"}'    
+                    context.scene.render.filepath = f'{scene.image_dir}/{object.name}_{"circular"}/{scene.camera_position_angle:.2f}{"d"}_{scene.camera_height_angle:.2f}{"d"}'    
                     bpy.ops.render.render(write_still=1)
             scene.camera_position_angle = 0
+            bpy.ops.opr.default_rotation()
         
         if trajectory == 'spherical_trajectory':
             h_qnt = round(360/h_angle)
@@ -102,14 +102,53 @@ class Opr_start_render(bpy.types.Operator):
             for v_pic in range(v_qnt + 1):
                 scene.camera_height_angle = v_pic * v_angle
                 
-                for h_pic in range(h_qnt):
+                for h_pic in range(h_qnt + 1):
                     scene.camera_position_angle = h_pic * h_angle
                     light.location = camera.location
-                    context.scene.render.filepath = f'{scene.image_dir}/{object.name}/{scene.camera_position_angle:.2f}{"d"}_{scene.camera_height_angle:.2f}{"d"}'    
+                    context.scene.render.filepath = f'{scene.image_dir}/{object.name}_{"spherical"}/{scene.camera_position_angle:.2f}{"d"}_{scene.camera_height_angle:.2f}{"d"}'    
                     bpy.ops.render.render(write_still=1)
-
             scene.camera_position_angle = 0
             scene.camera_height_angle = 90
+            bpy.ops.opr.default_rotation()
+
+class Opr_select_directory(bpy.types.Operator):
+    bl_idname = "opr.select_directory"
+    bl_label = "Select Directory"
+
+    set_object = utils.SetObject()
+    set_camera = utils.SetCamera()
+    set_tracking = utils.SetTracking()
+    set_light = utils.SetLight()
+
+    def execute(self, context):
+        object = self.set_object.selector(context)
+        
+        if object:
+            bpy.data.objects.remove(object, do_unlink=True)
+        self.auto_import(context)
+        return {"FINISHED"}
+    
+    def auto_import(self, context):
+        camera = context.scene.camera
+        light = bpy.data.objects.get('Light')
+        
+        object_path = context.scene.custom_properties.import_dir
+        
+        for file in os.listdir(object_path):
+            if file.endswith(".stl") or file.endswith(".STL"):
+                filepath = os.path.join(object_path, file)
+                bpy.ops.import_mesh.stl(filepath=filepath)
+                
+                object = self.set_object.selector(context)
+                self.set_object.set_origin(object)
+                self.set_light.set_light(light)
+                self.set_camera.fit_distance(context, object, camera, light)
+                bpy.ops.opr.default_rotation()
+                self.set_tracking.set_camera_tracking(object, camera)
+                self.set_tracking.set_light_tracking(object, light)
+                return
+
+
 
 class Opr_auto_execute(bpy.types.Operator):
     bl_idname = "opr.auto_execute"
@@ -142,8 +181,8 @@ class Opr_auto_execute(bpy.types.Operator):
                 object = self.set_object.selector(context)
                 self.set_object.set_origin(object)
                 self.set_light.set_light(light)
-                self.set_camera.fit_camera_distance(context, object, camera, light)
-                self.set_object.auto_rotate(object)
+                self.set_camera.fit_distance(context, object, camera, light)
+                bpy.ops.opr.default_rotation()
                 self.set_tracking.set_camera_tracking(object, camera)
                 self.set_tracking.set_light_tracking(object, light)
                 bpy.ops.opr.start_render()
@@ -155,10 +194,12 @@ def register_operators():
     bpy.utils.register_class(Opr_import_object)
     bpy.utils.register_class(Opr_default_rotation)
     bpy.utils.register_class(Opr_start_render)
+    bpy.utils.register_class(Opr_select_directory)
     bpy.utils.register_class(Opr_auto_execute)
 
 def unregister_operators():
     bpy.utils.unregister_class(Opr_import_object)
     bpy.utils.unregister_class(Opr_default_rotation)
     bpy.utils.unregister_class(Opr_start_render)
+    bpy.utils.unregister_class(Opr_select_directory)
     bpy.utils.unregister_class(Opr_auto_execute)

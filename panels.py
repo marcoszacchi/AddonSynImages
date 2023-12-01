@@ -18,28 +18,30 @@ class VIEW3D_PT_synthetic_image_generator(bpy.types.Panel):
         box1 = layout.box()
         icon = 'TRIA_DOWN' if scene.auto_exec else 'TRIA_RIGHT'
         row = box1.row()
-        row.prop(scene, "auto_exec", text="Multiple Synthesis", icon=icon, emboss=False)
+        row.prop(scene, "auto_exec", text="Multiple Files", icon=icon, emboss=False)
 
         if scene.auto_exec:
             row = box1.row()
             col1 = row.column()
-            col1.scale_x = 1.4
-            col1.label(text="STL Directory", icon='FOLDER_REDIRECT')
+            col1.scale_x = 0.9
+            col1.label(text="Source", icon='FOLDER_REDIRECT')
             col2 = row.column()
             col2.prop(scene, "import_dir")
+            
             row = box1.row()
+            row.operator(operators.Opr_select_directory.bl_idname)
         
 
         box2 = layout.box()
         icon = 'TRIA_DOWN' if scene.manual_exec else 'TRIA_RIGHT'
         row = box2.row()
-        row.prop(scene, "manual_exec", text="Single Synthesis", icon=icon, emboss=False)
+        row.prop(scene, "manual_exec", text="Single File", icon=icon, emboss=False)
 
         if scene.manual_exec:
             row = box2.row()
             col1 = row.column()
-            col1.scale_x = 1.4
-            col1.label(text="STL File", icon='FOLDER_REDIRECT')
+            col1.scale_x = 0.9
+            col1.label(text="File", icon='FOLDER_REDIRECT')
             col2 = row.column()
             col2.prop(scene, "file_dir")
             

@@ -8,9 +8,10 @@ def update_object_rotation(scene, context):
     object = set_object.selector(context)
    
     if object:
-        object.rotation_euler.x = np.deg2rad(scene.object_rotation_x)
-        object.rotation_euler.y = np.deg2rad(scene.object_rotation_y)
-        object.rotation_euler.z = np.deg2rad(scene.object_rotation_z)
+        if scene.manual_exec_set:
+            object.rotation_euler.x = np.deg2rad(scene.object_rotation_x)
+            object.rotation_euler.y = np.deg2rad(scene.object_rotation_y)
+            object.rotation_euler.z = np.deg2rad(scene.object_rotation_z)
 
 def update_camera_position(scene, context):
     scene = context.scene.custom_properties
