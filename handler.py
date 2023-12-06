@@ -25,25 +25,31 @@ def update_camera_position(scene, context):
     camera.location.y = r * np.sin(phi) * np.sin(theta)
     camera.location.z = r * np.cos(phi)
 
-def update_light_height(scene, context):
+def update_light(scene, context):
+    scene = context.scene.custom_properties
+    set_light = utils.SetLight()
     camera = context.scene.camera
     light = bpy.data.objects.get('Light')
     light.location = camera.location
+
+    intensity = scene.light_intensity
+
+    set_light.set_light_intensity(light, intensity)
 
 def update_camera_clip(scene, context):
     camera = context.scene.camera
     camera.data.clip_start = 0.1
     camera.data.clip_end = camera.location.length * 1.5
-
+    
 def register_handler():
     bpy.app.handlers.depsgraph_update_post.append(update_object_rotation)
     bpy.app.handlers.depsgraph_update_post.append(update_camera_position)
-    bpy.app.handlers.depsgraph_update_post.append(update_light_height)
+    bpy.app.handlers.depsgraph_update_post.append(update_light)
     bpy.app.handlers.depsgraph_update_post.append(update_camera_clip)
 
 def unregister_handler():
     for handler in bpy.app.handlers.render_complete:
         bpy.app.handlers.depsgraph_update_post.append(update_object_rotation)
         bpy.app.handlers.render_complete.remove(update_camera_position)
-        bpy.app.handlers.render_complete.remove(update_light_height)
+        bpy.app.handlers.render_complete.remove(update_light)
         bpy.app.handlers.render_complete.remove(update_camera_clip)

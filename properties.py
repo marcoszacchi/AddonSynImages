@@ -6,6 +6,9 @@ class CustomProperties(bpy.types.PropertyGroup):
     manual_exec_set: bpy.props.BoolProperty(default=False)
     trajectory: bpy.props.BoolProperty(default=False)
     transformations: bpy.props.BoolProperty(default=False)
+    background: bpy.props.BoolProperty(default=False)
+    background_color: bpy.props.BoolProperty(default=False)
+    background_image: bpy.props.BoolProperty(default=False)
     export: bpy.props.BoolProperty(default=False)
 
     cam_trajectory: bpy.props.EnumProperty(
@@ -53,6 +56,14 @@ class CustomProperties(bpy.types.PropertyGroup):
         subtype='DIR_PATH'
     )
 
+    background_dir : bpy.props.StringProperty(
+        name="",
+        description="Directory to import background",
+        default="",
+        maxlen=1024,
+        subtype='FILE_PATH'
+    )
+
     horizontal_rotation_steps : bpy.props.IntProperty(
         name="Rotation Steps",
         min=1,
@@ -93,6 +104,43 @@ class CustomProperties(bpy.types.PropertyGroup):
         min=0,
         max=100,
         default=0,
+    )
+
+    light_intensity : bpy.props.IntProperty(
+        name="Light Intensity",
+        min=0,
+        max=200,
+        default=100,
+    )
+
+    background_type: bpy.props.EnumProperty(
+        items=[
+            ('solid_color', "Solid Color", "RGB Solid Color"),
+            ('image', "Image", "Fixed Image")
+        ],
+        name="",
+        description=""
+    )
+
+    r_color: bpy.props.IntProperty(
+        name="R",
+        min=0,
+        max=255,
+        default=13,
+    )
+
+    g_color: bpy.props.IntProperty(
+        name="G",
+        min=0,
+        max=255,
+        default=13,
+    )
+
+    b_color: bpy.props.IntProperty(
+        name="B",
+        min=0,
+        max=255,
+        default=13,
     )
 
 def register_properties():

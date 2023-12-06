@@ -12,6 +12,8 @@ class Opr_import_object(bpy.types.Operator):
     set_camera = utils.SetCamera()
     set_tracking = utils.SetTracking()
     set_light = utils.SetLight()
+    set_scene = utils.SetScene()
+    set_render = utils.SetRender()
 
     def execute(self, context):
         scene = context.scene.custom_properties
@@ -19,6 +21,8 @@ class Opr_import_object(bpy.types.Operator):
         camera = context.scene.camera
         light = bpy.data.objects.get('Light')
         file = scene.file_dir
+        self.set_scene.delete_trace()
+        self.set_render.set_viewport()
 
         if object:
             bpy.data.objects.remove(object, do_unlink=True)
@@ -28,6 +32,7 @@ class Opr_import_object(bpy.types.Operator):
         object = self.set_object.selector(context)
         
         if object:
+            self.set_scene.delete_trace()
             scene.object_rotation_x = np.rad2deg(object.rotation_euler.x)
             scene.object_rotation_y = np.rad2deg(object.rotation_euler.y)
             scene.object_rotation_z = np.rad2deg(object.rotation_euler.z)
@@ -37,6 +42,7 @@ class Opr_import_object(bpy.types.Operator):
             self.set_light.set_light(light)
             self.set_tracking.set_camera_tracking(object, camera)
             self.set_tracking.set_light_tracking(object, light)
+            self.set_camera.camera_view()
 
         return {"FINISHED"}
     
@@ -67,6 +73,8 @@ class Opr_start_render(bpy.types.Operator):
 
     set_object = utils.SetObject()
     set_camera = utils.SetCamera()
+    set_scene = utils.SetScene()
+    set_light = utils.SetLight()
         
     def execute(self, context):
         
@@ -90,10 +98,10 @@ class Opr_start_render(bpy.types.Operator):
             for h_pic in range(h_qnt):
                     scene.camera_position_angle = h_pic * h_angle
                     light.location = camera.location
+                    self.set_light.set_light(light)
                     context.scene.render.filepath = f'{scene.image_dir}/{object.name}_{"circular"}/{scene.camera_position_angle:.2f}{"d"}_{scene.camera_height_angle:.2f}{"d"}'    
                     bpy.ops.render.render(write_still=1)
-            scene.camera_position_angle = 0
-            bpy.ops.opr.default_rotation()
+                    self.set_scene.set_trace(camera.location)
         
         if trajectory == 'spherical_trajectory':
             h_qnt = round(360/h_angle)
@@ -107,9 +115,12 @@ class Opr_start_render(bpy.types.Operator):
                     light.location = camera.location
                     context.scene.render.filepath = f'{scene.image_dir}/{object.name}_{"spherical"}/{scene.camera_position_angle:.2f}{"d"}_{scene.camera_height_angle:.2f}{"d"}'    
                     bpy.ops.render.render(write_still=1)
-            scene.camera_position_angle = 0
-            scene.camera_height_angle = 90
-            bpy.ops.opr.default_rotation()
+                    self.set_scene.set_trace(camera.location)
+
+        scene.camera_position_angle = 0
+        scene.camera_height_angle = 90
+        bpy.ops.opr.default_rotation()
+        self.set_camera.space_view()
 
 class Opr_select_directory(bpy.types.Operator):
     bl_idname = "opr.select_directory"
@@ -119,16 +130,19 @@ class Opr_select_directory(bpy.types.Operator):
     set_camera = utils.SetCamera()
     set_tracking = utils.SetTracking()
     set_light = utils.SetLight()
+    set_scene = utils.SetScene()
 
     def execute(self, context):
         object = self.set_object.selector(context)
+        self.set_scene.delete_trace()
         
         if object:
             bpy.data.objects.remove(object, do_unlink=True)
-        self.auto_import(context)
+        self.select_file(context)
         return {"FINISHED"}
     
-    def auto_import(self, context):
+    def select_file(self, context):
+        scene = context.scene.custom_properties
         camera = context.scene.camera
         light = bpy.data.objects.get('Light')
         
@@ -146,38 +160,39 @@ class Opr_select_directory(bpy.types.Operator):
                 bpy.ops.opr.default_rotation()
                 self.set_tracking.set_camera_tracking(object, camera)
                 self.set_tracking.set_light_tracking(object, light)
+                self.set_camera.camera_view()
                 return
-
-
 
 class Opr_auto_execute(bpy.types.Operator):
     bl_idname = "opr.auto_execute"
-    bl_label = "Synthesize from Directory"
+    bl_label = "Synthesize from Source"
 
     set_object = utils.SetObject()
     set_camera = utils.SetCamera()
     set_tracking = utils.SetTracking()
     set_light = utils.SetLight()
+    set_scene = utils.SetScene()
 
     def execute(self, context):
-        object = self.set_object.selector(context)
-        
-        if object:
-            bpy.data.objects.remove(object, do_unlink=True)
         self.auto_import(context)
+
         return {"FINISHED"}
     
     def auto_import(self, context):
+        scene = context.scene.custom_properties
+        object = self.set_object.selector(context)
         camera = context.scene.camera
         light = bpy.data.objects.get('Light')
-        
         object_path = context.scene.custom_properties.import_dir
         
         for file in os.listdir(object_path):
             if file.endswith(".stl") or file.endswith(".STL"):
+                if object:
+                    bpy.data.objects.remove(object, do_unlink=True)
+                    self.set_scene.delete_trace()
+
                 filepath = os.path.join(object_path, file)
                 bpy.ops.import_mesh.stl(filepath=filepath)
-                
                 object = self.set_object.selector(context)
                 self.set_object.set_origin(object)
                 self.set_light.set_light(light)
@@ -186,9 +201,56 @@ class Opr_auto_execute(bpy.types.Operator):
                 self.set_tracking.set_camera_tracking(object, camera)
                 self.set_tracking.set_light_tracking(object, light)
                 bpy.ops.opr.start_render()
-                bpy.data.objects.remove(object, do_unlink=True)
-    
 
+class Opr_select_background_color(bpy.types.Operator):
+    bl_idname = "opr.set_background_color"
+    bl_label = "Set Background Color"
+
+    set_world = utils.SetWorld()
+
+    def execute(self, context):
+        scene = context.scene.custom_properties
+        r = scene.r_color
+        g = scene.g_color
+        b = scene.b_color
+
+        self.set_world.set_background_color(r, g, b)
+
+        return {'FINISHED'}
+
+class Opr_default_background_color(bpy.types.Operator):
+    bl_idname = "opr.default_background_color"
+    bl_label = "Default Background Color"
+
+    set_world = utils.SetWorld()
+
+    def execute(self, context):
+        scene = context.scene.custom_properties
+        scene.r_color = 13
+        scene.g_color = 13
+        scene.b_color = 13
+        r = scene.r_color
+        g = scene.g_color
+        b = scene.b_color
+
+        self.set_world.set_background_color(r, g, b)
+
+        return {'FINISHED'}
+    
+class Opr_select_background_image(bpy.types.Operator):
+    bl_idname = "opr.set_background_image"
+    bl_label = "Set Background Image"
+
+    set_world = utils.SetWorld()
+
+    def execute(self, context):
+        scene = context.scene.custom_properties
+        image_path = scene.background_dir
+
+        self.set_world.set_background_image(image_path)
+        
+        return {'FINISHED'}
+    
 
 def register_operators():
     bpy.utils.register_class(Opr_import_object)
@@ -196,6 +258,9 @@ def register_operators():
     bpy.utils.register_class(Opr_start_render)
     bpy.utils.register_class(Opr_select_directory)
     bpy.utils.register_class(Opr_auto_execute)
+    bpy.utils.register_class(Opr_select_background_color)
+    bpy.utils.register_class(Opr_default_background_color)
+    bpy.utils.register_class(Opr_select_background_image)
 
 def unregister_operators():
     bpy.utils.unregister_class(Opr_import_object)
@@ -203,3 +268,6 @@ def unregister_operators():
     bpy.utils.unregister_class(Opr_start_render)
     bpy.utils.unregister_class(Opr_select_directory)
     bpy.utils.unregister_class(Opr_auto_execute)
+    bpy.utils.unregister_class(Opr_select_background_color)
+    bpy.utils.unregister_class(Opr_default_background_color)
+    bpy.utils.unregister_class(Opr_select_background_image)

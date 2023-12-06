@@ -2,6 +2,14 @@ import bpy
 import mathutils
 import numpy as np
 
+class SetRender:
+    def set_viewport(self):
+        for area in bpy.context.screen.areas:
+            if area.type == 'VIEW_3D':
+                for space in area.spaces:
+                    if space.type == 'VIEW_3D':
+                        space.shading.type = 'RENDERED'
+
 class SetObject:
     def selector(self, context):
         fixed_object_names = ['Camera', 'Light']
@@ -85,6 +93,28 @@ class SetCamera:
         camera_direction = (camera.location - object.location).normalized()
         camera.location = object.location + camera_direction * distance_camera
         light.location = camera.location
+    
+    def camera_view(self):
+        for area in bpy.context.screen.areas:
+            if area.type == 'VIEW_3D':
+                for space in area.spaces:
+                    if space.type == 'VIEW_3D':
+                            space.region_3d.view_perspective = 'CAMERA'
+                            space.overlay.show_floor = False
+                            space.overlay.show_axis_x = False
+                            space.overlay.show_axis_y = False
+                            return
+    
+    def space_view(self):
+        for area in bpy.context.screen.areas:
+            if area.type == 'VIEW_3D':
+                for space in area.spaces:
+                    if space.type == 'VIEW_3D':
+                            space.region_3d.view_perspective = 'PERSP'
+                            space.overlay.show_floor = False
+                            space.overlay.show_axis_x = False
+                            space.overlay.show_axis_y = False
+                            return
 
 class SetTracking:
     def set_camera_tracking(self, object, camera):
@@ -98,5 +128,68 @@ class SetTracking:
 class SetLight:
     def set_light(self, light):
         light.data.type = 'SUN'
-        light.data.energy = 2
         light.data.use_shadow = False
+    
+    def set_light_intensity(self, light, intensity):
+        value = (2 * intensity) / 100
+        light.data.energy = value
+
+class SetScene:
+    def set_trace(self, location):
+        bpy.ops.object.empty_add(type='SPHERE', location=location)
+    
+    def delete_trace(self):
+        traces = bpy.context.scene.objects
+        traces_to_delete = [obj for obj in traces if obj.type == 'EMPTY' and obj.empty_display_type == 'SPHERE']
+        for trace in traces_to_delete:
+            bpy.data.objects.remove(trace, do_unlink=True)
+
+class SetWorld:
+    
+    def set_background_color(self, r, g, b):
+        a = 255
+        r, g, b, a = [x / 255.0 for x in (r, g, b, a)]
+        world = bpy.context.scene.world
+        world.use_nodes = True
+        node_tree = world.node_tree
+        nodes = node_tree.nodes
+        nodes.clear()
+        node_background = nodes.new(type='ShaderNodeBackground')
+        node_output = nodes.new(type='ShaderNodeOutputWorld')
+        node_background.inputs['Color'].default_value = (r, g, b, a)
+        node_tree.links.new(node_background.outputs['Background'], node_output.inputs['Surface'])
+
+    def set_background_image(self, image_path):
+        image = bpy.data.images.load(image_path)
+
+        world = bpy.context.scene.world
+        world.use_nodes = True
+        node_tree = world.node_tree
+        nodes = node_tree.nodes
+        nodes.clear()
+
+        node_background = nodes.new('ShaderNodeBackground')
+        env_texture = nodes.new('ShaderNodeTexEnvironment')
+        world_output = nodes.new('ShaderNodeOutputWorld')
+
+        env_texture.image = image
+
+        links = node_tree.links
+        link_env_bg = None
+        for link in links:
+            if link.from_node == env_texture and link.to_node == node_background:
+                link_env_bg = link
+                break
+
+        if not link_env_bg:
+            links.new(env_texture.outputs["Color"], node_background.inputs["Color"])
+        
+        link_bg_output = None
+        for link in links:
+            if link.from_node == node_background and link.to_node == world_output:
+                link_bg_output = link
+                break
+
+        if not link_bg_output:
+            links.new(node_background.outputs["Background"], world_output.inputs["Surface"])
+        
