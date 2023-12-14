@@ -49,7 +49,7 @@ def register_handler():
 
 def unregister_handler():
     for handler in bpy.app.handlers.render_complete:
-        bpy.app.handlers.depsgraph_update_post.append(update_object_rotation)
+        bpy.app.handlers.render_complete.remove(update_object_rotation)
         bpy.app.handlers.render_complete.remove(update_camera_position)
         bpy.app.handlers.render_complete.remove(update_light)
         bpy.app.handlers.render_complete.remove(update_camera_clip)
