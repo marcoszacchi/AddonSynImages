@@ -36,10 +36,11 @@ def update_light(scene, context):
 
     set_light.set_light_intensity(light, intensity)
 
-def update_camera_clip(scene, context):
+def update_camera_clip(context):
     camera = context.scene.camera
     camera.data.clip_start = 0.1
     camera.data.clip_end = camera.location.length * 1.5
+
     
 def register_handler():
     bpy.app.handlers.depsgraph_update_post.append(update_object_rotation)

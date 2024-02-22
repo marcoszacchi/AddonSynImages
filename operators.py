@@ -1,19 +1,62 @@
 import bpy
 import os
 import numpy as np
-import random
 from . import utils
+
+class Opr_select_directory(bpy.types.Operator):
+    bl_idname = "opr.select_directory"
+    bl_label = "Select Directory"
+
+    def __init__(self):
+        self.set_object = utils.SetObject()
+        self.set_camera = utils.SetCamera()
+        self.set_tracking = utils.SetTracking()
+        self.set_light = utils.SetLight()
+        self.set_scene = utils.SetScene()
+
+    def execute(self, context):
+        object = self.set_object.selector(context)
+        camera = context.scene.camera
+        light = bpy.data.objects.get('Light')
+        object_path = context.scene.custom_properties.import_dir
+        self.set_scene.delete_trace()
+        
+        if object:
+            bpy.data.objects.remove(object, do_unlink=True)
+        
+        self.select_file(context, camera, light, object_path)
+
+        return {"FINISHED"}
+    
+    def select_file(self, context, camera, light, object_path):
+        for file in os.listdir(object_path):
+            if file.endswith(".stl") or file.endswith(".STL"):
+                filepath = os.path.join(object_path, file)
+                bpy.ops.import_mesh.stl(filepath=filepath)
+                
+                object = self.set_object.selector(context)
+                self.set_object.set_origin(object)
+                self.set_light.set_light(light)
+                self.set_camera.fit_distance(context, object, camera, light)
+                bpy.ops.opr.default_rotation()
+                self.set_tracking.set_camera_tracking(object, camera)
+                self.set_tracking.set_light_tracking(object, light)
+                self.set_camera.camera_view()
+                
+                return
+
 
 class Opr_import_object(bpy.types.Operator):
     bl_idname = "opr.import_object"
     bl_label = "Import STL"
 
-    set_object = utils.SetObject()
-    set_camera = utils.SetCamera()
-    set_tracking = utils.SetTracking()
-    set_light = utils.SetLight()
-    set_scene = utils.SetScene()
-    set_render = utils.SetRender()
+    def __init__(self):
+        self.set_object = utils.SetObject()
+        self.set_camera = utils.SetCamera()
+        self.set_tracking = utils.SetTracking()
+        self.set_light = utils.SetLight()
+        self.set_scene = utils.SetScene()
+        self.set_render = utils.SetRender()
 
     def execute(self, context):
         scene = context.scene.custom_properties
@@ -50,11 +93,13 @@ class Opr_import_object(bpy.types.Operator):
         if file.endswith(".stl") or file.endswith(".STL"):
             bpy.ops.import_mesh.stl(filepath=file)
 
+
 class Opr_default_rotation(bpy.types.Operator):
     bl_idname = "opr.default_rotation"
     bl_label = "Default Rotation"
 
-    set_object = utils.SetObject()
+    def __init__(self):
+        self.set_object = utils.SetObject()
 
     def execute(self, context):
         scene = context.scene.custom_properties
@@ -67,31 +112,31 @@ class Opr_default_rotation(bpy.types.Operator):
 
         return {"FINISHED"}
 
+
 class Opr_start_render(bpy.types.Operator):
     bl_idname = "opr.start_render"
-    bl_label = "Synthesize from File"
+    bl_label = "Single Synthesize"
 
-    set_object = utils.SetObject()
-    set_camera = utils.SetCamera()
-    set_scene = utils.SetScene()
-    set_light = utils.SetLight()
+    def __init__(self):
+        self.set_object = utils.SetObject()
+        self.set_camera = utils.SetCamera()
+        self.set_scene = utils.SetScene()
+        self.set_light = utils.SetLight()
         
     def execute(self, context):
-        
+        scene = context.scene.custom_properties
         object = self.set_object.selector(context)
         camera = context.scene.camera
         light = bpy.data.objects.get('Light')
-        context.scene.render.image_settings.file_format = 'PNG'
-        self.start_render(context, object, camera, light)
-        
-        return {"FINISHED"}
-
-    def start_render(self, context, object, camera, light):
-        scene = context.scene.custom_properties
         trajectory = scene.cam_trajectory
         h_angle = scene.horizontal_rotation_steps
         v_angle = scene.vertical_rotation_steps
-        
+        context.scene.render.image_settings.file_format = 'PNG'
+        self.set_scene.delete_trace()
+        self.start_render(context, scene, object, camera, light, trajectory, h_angle, v_angle)
+        return {"FINISHED"}
+
+    def start_render(self, context, scene, object, camera, light, trajectory, h_angle, v_angle):
         if trajectory == 'circular_trajectory':
             h_qnt = round(360/h_angle)
             
@@ -122,69 +167,30 @@ class Opr_start_render(bpy.types.Operator):
         bpy.ops.opr.default_rotation()
         self.set_camera.space_view()
 
-class Opr_select_directory(bpy.types.Operator):
-    bl_idname = "opr.select_directory"
-    bl_label = "Select Directory"
-
-    set_object = utils.SetObject()
-    set_camera = utils.SetCamera()
-    set_tracking = utils.SetTracking()
-    set_light = utils.SetLight()
-    set_scene = utils.SetScene()
-
-    def execute(self, context):
-        object = self.set_object.selector(context)
-        self.set_scene.delete_trace()
-        
-        if object:
-            bpy.data.objects.remove(object, do_unlink=True)
-        self.select_file(context)
-        return {"FINISHED"}
-    
-    def select_file(self, context):
-        scene = context.scene.custom_properties
-        camera = context.scene.camera
-        light = bpy.data.objects.get('Light')
-        
-        object_path = context.scene.custom_properties.import_dir
-        
-        for file in os.listdir(object_path):
-            if file.endswith(".stl") or file.endswith(".STL"):
-                filepath = os.path.join(object_path, file)
-                bpy.ops.import_mesh.stl(filepath=filepath)
-                
-                object = self.set_object.selector(context)
-                self.set_object.set_origin(object)
-                self.set_light.set_light(light)
-                self.set_camera.fit_distance(context, object, camera, light)
-                bpy.ops.opr.default_rotation()
-                self.set_tracking.set_camera_tracking(object, camera)
-                self.set_tracking.set_light_tracking(object, light)
-                self.set_camera.camera_view()
-                return
 
 class Opr_auto_execute(bpy.types.Operator):
     bl_idname = "opr.auto_execute"
-    bl_label = "Synthesize from Source"
+    bl_label = "Multiple Synthesizes"
 
-    set_object = utils.SetObject()
-    set_camera = utils.SetCamera()
-    set_tracking = utils.SetTracking()
-    set_light = utils.SetLight()
-    set_scene = utils.SetScene()
+    def __init__(self):
+        self.set_object = utils.SetObject()
+        self.set_camera = utils.SetCamera()
+        self.set_tracking = utils.SetTracking()
+        self.set_light = utils.SetLight()
+        self.set_scene = utils.SetScene()
 
     def execute(self, context):
-        self.auto_import(context)
-
-        return {"FINISHED"}
-    
-    def auto_import(self, context):
         scene = context.scene.custom_properties
         object = self.set_object.selector(context)
         camera = context.scene.camera
         light = bpy.data.objects.get('Light')
-        object_path = context.scene.custom_properties.import_dir
-        
+        object_path = scene.custom_properties.import_dir
+
+        self.auto_import(context, object, camera, light, object_path)
+
+        return {"FINISHED"}
+    
+    def auto_import(self, context, object, camera, light, object_path):
         for file in os.listdir(object_path):
             if file.endswith(".stl") or file.endswith(".STL"):
                 if object:
@@ -202,11 +208,13 @@ class Opr_auto_execute(bpy.types.Operator):
                 self.set_tracking.set_light_tracking(object, light)
                 bpy.ops.opr.start_render()
 
+
 class Opr_select_background_color(bpy.types.Operator):
     bl_idname = "opr.set_background_color"
     bl_label = "Set Background Color"
 
-    set_world = utils.SetWorld()
+    def __init__(self):
+        self.set_world = utils.SetWorld()
 
     def execute(self, context):
         scene = context.scene.custom_properties
@@ -218,11 +226,13 @@ class Opr_select_background_color(bpy.types.Operator):
 
         return {'FINISHED'}
 
+
 class Opr_default_background_color(bpy.types.Operator):
     bl_idname = "opr.default_background_color"
     bl_label = "Default Background Color"
 
-    set_world = utils.SetWorld()
+    def __init__(self):
+        self.set_world = utils.SetWorld()
 
     def execute(self, context):
         scene = context.scene.custom_properties
@@ -236,12 +246,14 @@ class Opr_default_background_color(bpy.types.Operator):
         self.set_world.set_background_color(r, g, b)
 
         return {'FINISHED'}
-    
+ 
+
 class Opr_select_background_image(bpy.types.Operator):
     bl_idname = "opr.set_background_image"
     bl_label = "Set Background Image"
 
-    set_world = utils.SetWorld()
+    def __init__(self):
+        self.set_world = utils.SetWorld()
 
     def execute(self, context):
         scene = context.scene.custom_properties
@@ -250,7 +262,7 @@ class Opr_select_background_image(bpy.types.Operator):
         self.set_world.set_background_image(image_path)
         
         return {'FINISHED'}
-    
+
 
 def register_operators():
     bpy.utils.register_class(Opr_import_object)

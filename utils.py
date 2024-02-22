@@ -145,7 +145,6 @@ class SetScene:
             bpy.data.objects.remove(trace, do_unlink=True)
 
 class SetWorld:
-    
     def set_background_color(self, r, g, b):
         a = 255
         r, g, b, a = [x / 255.0 for x in (r, g, b, a)]
