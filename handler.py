@@ -31,15 +31,14 @@ def update_light(scene, context):
     camera = context.scene.camera
     light = bpy.data.objects.get('Light')
     light.location = camera.location
-
     intensity = scene.light_intensity
-
     set_light.set_light_intensity(light, intensity)
 
-def update_camera_clip(context):
+def update_camera_clip(scene, context):
     camera = context.scene.camera
-    camera.data.clip_start = 0.1
-    camera.data.clip_end = camera.location.length * 1.5
+    if camera is not None:
+        camera.data.clip_start = 0.1
+        camera.data.clip_end = camera.location.length * 1.5
 
     
 def register_handler():

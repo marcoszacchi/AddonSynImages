@@ -71,10 +71,15 @@ class Opr_import_object(bpy.types.Operator):
             bpy.data.objects.remove(object, do_unlink=True)
         
         scene.camera_height = 0        
-        self.manual_import(file)
-        object = self.set_object.selector(context)
         
-        if object:
+        self.manual_import(context, scene, camera, light, file)
+        
+        return {"FINISHED"}
+    
+    def manual_import(self, context, scene, camera, light, file):
+        if file.endswith(".stl") or file.endswith(".STL"):
+            bpy.ops.import_mesh.stl(filepath=file)
+            object = self.set_object.selector(context)
             self.set_scene.delete_trace()
             scene.object_rotation_x = np.rad2deg(object.rotation_euler.x)
             scene.object_rotation_y = np.rad2deg(object.rotation_euler.y)
@@ -86,12 +91,6 @@ class Opr_import_object(bpy.types.Operator):
             self.set_tracking.set_camera_tracking(object, camera)
             self.set_tracking.set_light_tracking(object, light)
             self.set_camera.camera_view()
-
-        return {"FINISHED"}
-    
-    def manual_import(self, file):
-        if file.endswith(".stl") or file.endswith(".STL"):
-            bpy.ops.import_mesh.stl(filepath=file)
 
 
 class Opr_default_rotation(bpy.types.Operator):

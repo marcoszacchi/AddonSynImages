@@ -22,7 +22,6 @@ bl_info = {
     "category" : "3D View"
 }
 
-import bpy
 from . import operators, properties, panels, handler
 
 def register():
