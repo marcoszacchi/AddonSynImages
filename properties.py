@@ -11,7 +11,14 @@ class CustomProperties(bpy.types.PropertyGroup):
     background_image: bpy.props.BoolProperty(default=False)#type: ignore
     export: bpy.props.BoolProperty(default=False)#type: ignore
 
-    cam_trajectory: bpy.props.EnumProperty(
+    object_name : bpy.props.StringProperty(
+        name="Object Name",
+        description="Name of the object",
+        default="",
+        maxlen=1024  # Opcional: limita o comprimento máximo da string
+    )#type: ignore
+
+    cam_trajectory : bpy.props.EnumProperty(
         items=[
             ('circular_trajectory', "Circular", "Circular Trajectory"),
             ('spherical_trajectory', "Spherical", "Spherical Trajectory")
@@ -95,14 +102,21 @@ class CustomProperties(bpy.types.PropertyGroup):
     scaling_percentage : bpy.props.IntProperty(
         name="Scaling",
         min=0,
-        max=100,
+        max=500,
+        default=100,
+    )#type: ignore
+
+    horizontal_translation : bpy.props.FloatProperty(
+        name="Horizontal Translation",
+        min=-50,
+        max=50,
         default=0,
     )#type: ignore
 
-    translation_percentage : bpy.props.IntProperty(
-        name="Translation",
-        min=0,
-        max=100,
+    vertical_translation : bpy.props.FloatProperty(
+        name="Vertical Translation",
+        min=-50,
+        max=50,
         default=0,
     )#type: ignore
 
@@ -113,7 +127,7 @@ class CustomProperties(bpy.types.PropertyGroup):
         default=100,
     )#type: ignore
 
-    background_type: bpy.props.EnumProperty(
+    background_type : bpy.props.EnumProperty(
         items=[
             ('solid_color', "Solid Color", "RGB Solid Color"),
             ('image', "Image", "Fixed Image")
@@ -122,21 +136,21 @@ class CustomProperties(bpy.types.PropertyGroup):
         description=""
     )#type: ignore
 
-    r_color: bpy.props.IntProperty(
+    r_color : bpy.props.IntProperty(
         name="R",
         min=0,
         max=255,
         default=13,
     )#type: ignore
 
-    g_color: bpy.props.IntProperty(
+    g_color : bpy.props.IntProperty(
         name="G",
         min=0,
         max=255,
         default=13,
     )#type: ignore
 
-    b_color: bpy.props.IntProperty(
+    b_color : bpy.props.IntProperty(
         name="B",
         min=0,
         max=255,

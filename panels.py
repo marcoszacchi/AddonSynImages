@@ -137,9 +137,16 @@ class VIEW3D_PT_synthetic_image_generator(bpy.types.Panel):
             row = box5.row()
             col1 = row.column()
             col1.scale_x = 1.1
-            col1.label(text="Translation", icon='ORIENTATION_VIEW')
+            col1.label(text="Hor. Translation", icon='ORIENTATION_VIEW')
             col2 = row.column()
-            col2.prop(scene, "translation_percentage", text="%")
+            col2.prop(scene, "horizontal_translation", text="")
+
+            row = box5.row()
+            col1 = row.column()
+            col1.scale_x = 1.1
+            col1.label(text="Ver. Translation", icon='ORIENTATION_VIEW')
+            col2 = row.column()
+            col2.prop(scene, "vertical_translation", text="")
 
             row = box5.row()
             col1 = row.column()

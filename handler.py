@@ -4,14 +4,30 @@ from . import utils
 
 def update_object_rotation(scene, context):
     scene = context.scene.custom_properties
-    set_object = utils.SetObject()
-    object = set_object.selector(context)
+    object = context.scene.objects.get(scene.object_name)
    
     if object:
         if scene.manual_exec_set:
             object.rotation_euler.x = np.deg2rad(scene.object_rotation_x)
             object.rotation_euler.y = np.deg2rad(scene.object_rotation_y)
             object.rotation_euler.z = np.deg2rad(scene.object_rotation_z)
+
+def update_object_scale(scene, context):
+    scene = context.scene.custom_properties
+    object = context.scene.objects.get(scene.object_name)
+
+    if object:
+        object.scale.x = scene.scaling_percentage / 100
+        object.scale.y = scene.scaling_percentage / 100
+        object.scale.z = scene.scaling_percentage / 100
+
+def update_origin_position(scene, context):
+    scene = context.scene.custom_properties
+    origin = context.scene.objects.get("Origin")
+
+    if origin:
+        origin.location.x = scene.horizontal_translation
+        origin.location.z = scene.vertical_translation
 
 def update_camera_position(scene, context):
     scene = context.scene.custom_properties
@@ -43,6 +59,8 @@ def update_camera_clip(scene, context):
     
 def register_handler():
     bpy.app.handlers.depsgraph_update_post.append(update_object_rotation)
+    bpy.app.handlers.depsgraph_update_post.append(update_object_scale)
+    bpy.app.handlers.depsgraph_update_post.append(update_origin_position)
     bpy.app.handlers.depsgraph_update_post.append(update_camera_position)
     bpy.app.handlers.depsgraph_update_post.append(update_light)
     bpy.app.handlers.depsgraph_update_post.append(update_camera_clip)
@@ -50,6 +68,8 @@ def register_handler():
 def unregister_handler():
     for handler in bpy.app.handlers.render_complete:
         bpy.app.handlers.render_complete.remove(update_object_rotation)
+        bpy.app.handlers.render_complete.remove(update_object_scale)
+        bpy.app.handlers.render_complete.remove(update_origin_position)
         bpy.app.handlers.render_complete.remove(update_camera_position)
         bpy.app.handlers.render_complete.remove(update_light)
         bpy.app.handlers.render_complete.remove(update_camera_clip)

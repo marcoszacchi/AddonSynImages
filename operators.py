@@ -15,32 +15,33 @@ class Opr_select_directory(bpy.types.Operator):
         self.set_scene = utils.SetScene()
 
     def execute(self, context):
+        scene = context.scene.custom_properties
         object = self.set_object.selector(context)
         camera = context.scene.camera
         light = bpy.data.objects.get('Light')
-        object_path = context.scene.custom_properties.import_dir
+        object_path = scene.import_dir
         self.set_scene.delete_trace()
         
         if object:
             bpy.data.objects.remove(object, do_unlink=True)
         
-        self.select_file(context, camera, light, object_path)
+        self.select_file(context, scene, camera, light, object_path)
 
         return {"FINISHED"}
     
-    def select_file(self, context, camera, light, object_path):
+    def select_file(self, context, scene, camera, light, object_path):
         for file in os.listdir(object_path):
             if file.endswith(".stl") or file.endswith(".STL"):
                 filepath = os.path.join(object_path, file)
                 bpy.ops.import_mesh.stl(filepath=filepath)
-                
                 object = self.set_object.selector(context)
+                scene.object_name = object.name
                 self.set_object.set_origin(object)
                 self.set_light.set_light(light)
                 self.set_camera.fit_distance(context, object, camera, light)
                 bpy.ops.opr.default_rotation()
-                self.set_tracking.set_camera_tracking(object, camera)
-                self.set_tracking.set_light_tracking(object, light)
+                self.set_tracking.set_camera_tracking(camera)
+                self.set_tracking.set_light_tracking(light)
                 self.set_camera.camera_view()
                 
                 return
@@ -68,8 +69,9 @@ class Opr_import_object(bpy.types.Operator):
         self.set_render.set_viewport()
 
         if object:
+            print(object.name)
             bpy.data.objects.remove(object, do_unlink=True)
-        
+
         scene.camera_height = 0        
         
         self.manual_import(context, scene, camera, light, file)
@@ -80,6 +82,7 @@ class Opr_import_object(bpy.types.Operator):
         if file.endswith(".stl") or file.endswith(".STL"):
             bpy.ops.import_mesh.stl(filepath=file)
             object = self.set_object.selector(context)
+            scene.object_name = object.name
             self.set_scene.delete_trace()
             scene.object_rotation_x = np.rad2deg(object.rotation_euler.x)
             scene.object_rotation_y = np.rad2deg(object.rotation_euler.y)
@@ -88,8 +91,8 @@ class Opr_import_object(bpy.types.Operator):
             bpy.ops.opr.default_rotation()
             self.set_camera.fit_distance(context, object, camera, light)
             self.set_light.set_light(light)
-            self.set_tracking.set_camera_tracking(object, camera)
-            self.set_tracking.set_light_tracking(object, light)
+            self.set_tracking.set_camera_tracking(camera)
+            self.set_tracking.set_light_tracking(light)
             self.set_camera.camera_view()
 
 
@@ -183,13 +186,13 @@ class Opr_auto_execute(bpy.types.Operator):
         object = self.set_object.selector(context)
         camera = context.scene.camera
         light = bpy.data.objects.get('Light')
-        object_path = scene.custom_properties.import_dir
+        object_path = scene.import_dir
 
-        self.auto_import(context, object, camera, light, object_path)
+        self.auto_import(context, scene, object, camera, light, object_path)
 
         return {"FINISHED"}
     
-    def auto_import(self, context, object, camera, light, object_path):
+    def auto_import(self, context, scene, object, camera, light, object_path):
         for file in os.listdir(object_path):
             if file.endswith(".stl") or file.endswith(".STL"):
                 if object:
@@ -199,12 +202,13 @@ class Opr_auto_execute(bpy.types.Operator):
                 filepath = os.path.join(object_path, file)
                 bpy.ops.import_mesh.stl(filepath=filepath)
                 object = self.set_object.selector(context)
+                scene.object_name = object.name
                 self.set_object.set_origin(object)
                 self.set_light.set_light(light)
                 self.set_camera.fit_distance(context, object, camera, light)
                 bpy.ops.opr.default_rotation()
-                self.set_tracking.set_camera_tracking(object, camera)
-                self.set_tracking.set_light_tracking(object, light)
+                self.set_tracking.set_camera_tracking(camera)
+                self.set_tracking.set_light_tracking(light)
                 bpy.ops.opr.start_render()
 
 

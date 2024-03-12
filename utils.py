@@ -12,7 +12,7 @@ class SetRender:
 
 class SetObject:
     def selector(self, context):
-        fixed_object_names = ['Camera', 'Light']
+        fixed_object_names = ['Camera', 'Light', 'Origin']
 
         for object in bpy.data.objects:
             object.select_set(False)
@@ -117,13 +117,45 @@ class SetCamera:
                             return
 
 class SetTracking:
-    def set_camera_tracking(self, object, camera):
-        constraint = camera.constraints.new(type='TRACK_TO')
-        constraint.target = object
+    def create_empty(self):
+        empty_name="Origin"
+        if empty_name in bpy.data.objects:
+            empty = bpy.data.objects[empty_name]
+        else:
+            bpy.ops.object.empty_add(type='PLAIN_AXES', location=(0, 0, 0))
+            empty = bpy.context.view_layer.objects.active
+            empty.name = empty_name
+        return empty
+    
+    def set_camera_tracking(self, camera):
+        empty = self.create_empty()
 
-    def set_light_tracking(self, object, light):
-        constraint = light.constraints.new(type='TRACK_TO')
-        constraint.target = object
+        track_to_constraint = False
+
+        for constraint in camera.constraints:
+            if constraint.type == 'TRACK_TO':
+                constraint.target = empty
+                track_to_constraint = True
+                break
+
+        if not track_to_constraint:
+            constraint = camera.constraints.new(type='TRACK_TO')
+            constraint.target = empty
+
+    def set_light_tracking(self, light):
+        empty = self.create_empty()
+
+        track_to_constraint = False
+
+        for constraint in light.constraints:
+            if constraint.type == 'TRACK_TO':
+                constraint.target = empty
+                track_to_constraint = True
+                break
+        
+        if not track_to_constraint:
+            constraint = light.constraints.new(type='TRACK_TO')
+            constraint.target = empty
 
 class SetLight:
     def set_light(self, light):
