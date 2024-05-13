@@ -55,6 +55,11 @@ def update_camera_clip(scene, context):
     if camera is not None:
         camera.data.clip_start = 0.1
         camera.data.clip_end = camera.location.length * 1.5
+    
+def update_background_color(scene, context):
+    scene = context.scene.custom_properties
+    set_world = utils.SetWorld()
+    set_world.set_background_color(scene.r_color, scene.g_color, scene.b_color)
 
     
 def register_handler():
@@ -64,6 +69,7 @@ def register_handler():
     bpy.app.handlers.depsgraph_update_post.append(update_camera_position)
     bpy.app.handlers.depsgraph_update_post.append(update_light)
     bpy.app.handlers.depsgraph_update_post.append(update_camera_clip)
+    bpy.app.handlers.depsgraph_update_post.append(update_background_color)
 
 def unregister_handler():
     for handler in bpy.app.handlers.render_complete:
@@ -73,3 +79,4 @@ def unregister_handler():
         bpy.app.handlers.render_complete.remove(update_camera_position)
         bpy.app.handlers.render_complete.remove(update_light)
         bpy.app.handlers.render_complete.remove(update_camera_clip)
+        bpy.app.handlers.render_complete.remove(update_background_color)

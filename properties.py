@@ -10,6 +10,8 @@ class CustomProperties(bpy.types.PropertyGroup):
     background_color: bpy.props.BoolProperty(default=False)#type: ignore
     background_image: bpy.props.BoolProperty(default=False)#type: ignore
     export: bpy.props.BoolProperty(default=False)#type: ignore
+    multiple: bpy.props.BoolProperty(default=False)#type: ignore
+    single: bpy.props.BoolProperty(default=False)#type: ignore
 
     object_name : bpy.props.StringProperty(
         name="Object Name",
@@ -58,7 +60,7 @@ class CustomProperties(bpy.types.PropertyGroup):
     image_dir : bpy.props.StringProperty(
         name="",
         description="Directory to save images",
-        default="SynImages",
+        default="C:/SynImages",
         maxlen=1024,
         subtype='DIR_PATH'
     )#type: ignore

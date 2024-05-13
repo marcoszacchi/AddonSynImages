@@ -32,6 +32,7 @@ class Opr_select_directory(bpy.types.Operator):
     def select_file(self, context, scene, camera, light, object_path):
         for file in os.listdir(object_path):
             if file.endswith(".stl") or file.endswith(".STL"):
+                processed = True
                 filepath = os.path.join(object_path, file)
                 bpy.ops.import_mesh.stl(filepath=filepath)
                 object = self.set_object.selector(context)
@@ -42,7 +43,7 @@ class Opr_select_directory(bpy.types.Operator):
                 bpy.ops.opr.default_rotation()
                 self.set_tracking.set_camera_tracking(camera)
                 self.set_tracking.set_light_tracking(light)
-                self.set_camera.camera_view()
+                self.set_camera.camera_view()   
                 
                 return
 
@@ -124,6 +125,7 @@ class Opr_start_render(bpy.types.Operator):
         self.set_camera = utils.SetCamera()
         self.set_scene = utils.SetScene()
         self.set_light = utils.SetLight()
+        self.set_data = utils.SetData()
         
     def execute(self, context):
         scene = context.scene.custom_properties
@@ -136,6 +138,10 @@ class Opr_start_render(bpy.types.Operator):
         context.scene.render.image_settings.file_format = 'PNG'
         self.set_scene.delete_trace()
         self.start_render(context, scene, object, camera, light, trajectory, h_angle, v_angle)
+       
+        path = scene.image_dir + "/data.txt"
+        self.set_data.generate_data(context, path)
+        
         return {"FINISHED"}
 
     def start_render(self, context, scene, object, camera, light, trajectory, h_angle, v_angle):
@@ -146,7 +152,7 @@ class Opr_start_render(bpy.types.Operator):
                     scene.camera_position_angle = h_pic * h_angle
                     light.location = camera.location
                     self.set_light.set_light(light)
-                    context.scene.render.filepath = f'{scene.image_dir}/{object.name}_{"circular"}/{scene.camera_position_angle:.2f}{"d"}_{scene.camera_height_angle:.2f}{"d"}'    
+                    context.scene.render.filepath = f'{scene.image_dir}/{object.name}/{scene.camera_position_angle:.2f}{"d"}_{scene.camera_height_angle:.2f}{"d"}'
                     bpy.ops.render.render(write_still=1)
                     self.set_scene.set_trace(camera.location)
         
@@ -160,7 +166,7 @@ class Opr_start_render(bpy.types.Operator):
                 for h_pic in range(h_qnt):
                     scene.camera_position_angle = h_pic * h_angle
                     light.location = camera.location
-                    context.scene.render.filepath = f'{scene.image_dir}/{object.name}_{"spherical"}/{scene.camera_position_angle:.2f}{"d"}_{scene.camera_height_angle:.2f}{"d"}'    
+                    context.scene.render.filepath = f'{scene.image_dir}/{object.name}/{scene.camera_position_angle:.2f}{"d"}_{scene.camera_height_angle:.2f}{"d"}'    
                     bpy.ops.render.render(write_still=1)
                     self.set_scene.set_trace(camera.location)
 
@@ -212,24 +218,6 @@ class Opr_auto_execute(bpy.types.Operator):
                 bpy.ops.opr.start_render()
 
 
-class Opr_select_background_color(bpy.types.Operator):
-    bl_idname = "opr.set_background_color"
-    bl_label = "Set Background Color"
-
-    def __init__(self):
-        self.set_world = utils.SetWorld()
-
-    def execute(self, context):
-        scene = context.scene.custom_properties
-        r = scene.r_color
-        g = scene.g_color
-        b = scene.b_color
-
-        self.set_world.set_background_color(r, g, b)
-
-        return {'FINISHED'}
-
-
 class Opr_default_background_color(bpy.types.Operator):
     bl_idname = "opr.default_background_color"
     bl_label = "Default Background Color"
@@ -273,7 +261,6 @@ def register_operators():
     bpy.utils.register_class(Opr_start_render)
     bpy.utils.register_class(Opr_select_directory)
     bpy.utils.register_class(Opr_auto_execute)
-    bpy.utils.register_class(Opr_select_background_color)
     bpy.utils.register_class(Opr_default_background_color)
     bpy.utils.register_class(Opr_select_background_image)
 
@@ -283,6 +270,5 @@ def unregister_operators():
     bpy.utils.unregister_class(Opr_start_render)
     bpy.utils.unregister_class(Opr_select_directory)
     bpy.utils.unregister_class(Opr_auto_execute)
-    bpy.utils.unregister_class(Opr_select_background_color)
     bpy.utils.unregister_class(Opr_default_background_color)
     bpy.utils.unregister_class(Opr_select_background_image)

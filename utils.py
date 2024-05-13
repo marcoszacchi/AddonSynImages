@@ -10,6 +10,50 @@ class SetRender:
                     if space.type == 'VIEW_3D':
                         space.shading.type = 'RENDERED'
 
+class SetData:
+    def generate_data(self, context, path):
+        scene = context.scene.custom_properties
+
+        cam_trajectory = scene.cam_trajectory
+        horizontal_rotation_steps = scene.horizontal_rotation_steps
+        vertical_rotation_steps = scene.vertical_rotation_steps
+        camera_height_angle = scene.camera_height_angle
+        horizontal_translation = scene.horizontal_translation
+        vertical_translation = scene.vertical_translation
+        light_intensity = scene.light_intensity
+        background_type = scene.background_type
+        r_color = scene.r_color
+        g_color = scene.g_color
+        b_color = scene.b_color
+        background_dir = scene.background_dir
+
+        data = []
+        data.append(f"Camera Trajectory: {cam_trajectory}")
+        data.append(f"Horizontal Rotation Steps: {horizontal_rotation_steps}")
+        
+        if cam_trajectory == "circular_trajectory":
+            data.append(f"Camera Height Angle: {camera_height_angle}°")
+        else:
+            data.append(f"Vertical Rotation Steps: {vertical_rotation_steps}")
+        
+        data.append(f"Horizontal Translation: {horizontal_translation}")
+        data.append(f"Vertical Translation: {vertical_translation}")
+        data.append(f"Light Intensity: {light_intensity}%")
+        data.append(f"Background Type: {background_type}")
+        
+        if background_type == "solid_color":
+            data.append(f"Color R: {r_color}")
+            data.append(f"Color G: {g_color}")
+            data.append(f"Color B: {b_color}")
+        else:
+            data.append(f"Background File: {background_dir}")
+        
+        data_string = "\n".join(data)
+
+        file = open(path, "w")
+        file.write(data_string)
+        file.close()
+
 class SetObject:
     def selector(self, context):
         fixed_object_names = ['Camera', 'Light', 'Origin']

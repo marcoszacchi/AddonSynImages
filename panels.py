@@ -192,9 +192,6 @@ class VIEW3D_PT_synthetic_image_generator(bpy.types.Panel):
                 col2.prop(scene, "b_color", text="")
 
                 row = box6.row()
-                row.operator(operators.Opr_select_background_color.bl_idname, text="Apply")
-
-                row = box6.row()
                 row.operator(operators.Opr_default_background_color.bl_idname, text="Default")
 
             if scene.background_type == 'image':
@@ -216,17 +213,30 @@ class VIEW3D_PT_synthetic_image_generator(bpy.types.Panel):
         if scene.export:
             row = box7.row()
             row.label(text="Image Path", icon='FILEBROWSER')
+            
             row = box7.row()
             row.prop(scene, "image_dir")
+            
 
-            row = box7.row()
-            row.operator(operators.Opr_auto_execute.bl_idname, icon='RESTRICT_RENDER_OFF')
+            box8 = layout.box()
+            icon = 'TRIA_DOWN' if scene.multiple else 'TRIA_RIGHT'
+            row = box8.row()
+            row.prop(scene, "multiple", text="Multiple Synthesize", icon=icon, emboss=False)
+
+            if scene.multiple:
+                row = box8.row()
+                row.operator(operators.Opr_auto_execute.bl_idname, icon='RESTRICT_RENDER_OFF')
             
-            row = box7.row()
-            row.operator(operators.Opr_start_render.bl_idname, icon='RESTRICT_RENDER_OFF')
+            box9 = layout.box()
+            icon = 'TRIA_DOWN' if scene.single else 'TRIA_RIGHT'
+            row = box9.row()
+            row.prop(scene, "single", text="Single Synthesize", icon=icon, emboss=False)
             
-            row = box7.row()
+            if scene.single:
+                row = box9.row()
+                row.operator(operators.Opr_start_render.bl_idname, icon='RESTRICT_RENDER_OFF')
         
+            row = box7.row()
 
 def register_panels():
     bpy.utils.register_class(VIEW3D_PT_synthetic_image_generator)
