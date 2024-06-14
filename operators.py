@@ -3,6 +3,19 @@ import os
 import numpy as np
 from . import utils
 
+class Opr_change_viewport(bpy.types.Operator):
+    bl_idname = "opr.change_viewport"
+    bl_label = "Change Viewport"
+
+    def execute(self, context):
+        for area in bpy.context.screen.areas:
+            if area.type == 'VIEW_3D':
+                for space in area.spaces:
+                    if space.type == 'VIEW_3D':
+                        space.shading.type = 'RENDERED'
+        return {'FINISHED'}
+
+
 class Opr_select_directory(bpy.types.Operator):
     bl_idname = "opr.select_directory"
     bl_label = "Select Directory"
@@ -32,7 +45,6 @@ class Opr_select_directory(bpy.types.Operator):
     def select_file(self, context, scene, camera, light, object_path):
         for file in os.listdir(object_path):
             if file.endswith(".stl") or file.endswith(".STL"):
-                processed = True
                 filepath = os.path.join(object_path, file)
                 bpy.ops.import_mesh.stl(filepath=filepath)
                 object = self.set_object.selector(context)
@@ -43,8 +55,8 @@ class Opr_select_directory(bpy.types.Operator):
                 bpy.ops.opr.default_rotation()
                 self.set_tracking.set_camera_tracking(camera)
                 self.set_tracking.set_light_tracking(light)
-                self.set_camera.camera_view()   
-                
+                self.set_camera.camera_view()  
+                bpy.ops.opr.change_viewport()
                 return
 
 
@@ -70,7 +82,6 @@ class Opr_import_object(bpy.types.Operator):
         self.set_render.set_viewport()
 
         if object:
-            print(object.name)
             bpy.data.objects.remove(object, do_unlink=True)
 
         scene.camera_height = 0        
@@ -95,6 +106,8 @@ class Opr_import_object(bpy.types.Operator):
             self.set_tracking.set_camera_tracking(camera)
             self.set_tracking.set_light_tracking(light)
             self.set_camera.camera_view()
+            bpy.ops.opr.default_background_color()
+            bpy.ops.opr.change_viewport()
 
 
 class Opr_default_rotation(bpy.types.Operator):
@@ -152,7 +165,10 @@ class Opr_start_render(bpy.types.Operator):
                     scene.camera_position_angle = h_pic * h_angle
                     light.location = camera.location
                     self.set_light.set_light(light)
-                    context.scene.render.filepath = f'{scene.image_dir}/{object.name}/{scene.camera_position_angle:.2f}{"d"}_{scene.camera_height_angle:.2f}{"d"}'
+                    if scene.custom_image:
+                        context.scene.render.filepath = f'{scene.image_dir}/{object.name}/{scene.camera_position_angle:.2f}{"d"}_{scene.camera_height_angle:.2f}{"d"}_{"custom-image"}_{scene.smoothing}{"px"}_{scene.noise}{"%"}'    
+                    else:
+                        context.scene.render.filepath = f'{scene.image_dir}/{object.name}/{scene.camera_position_angle:.2f}{"d"}_{scene.camera_height_angle:.2f}{"d"}_{scene.r_color}{"r"}_{scene.g_color}{"g"}_{scene.b_color}{"b"}_{scene.smoothing}{"px"}_{scene.noise}{"%"}'
                     bpy.ops.render.render(write_still=1)
                     self.set_scene.set_trace(camera.location)
         
@@ -166,12 +182,14 @@ class Opr_start_render(bpy.types.Operator):
                 for h_pic in range(h_qnt):
                     scene.camera_position_angle = h_pic * h_angle
                     light.location = camera.location
-                    context.scene.render.filepath = f'{scene.image_dir}/{object.name}/{scene.camera_position_angle:.2f}{"d"}_{scene.camera_height_angle:.2f}{"d"}'    
+                    if scene.custom_image:
+                        context.scene.render.filepath = f'{scene.image_dir}/{object.name}/{scene.camera_position_angle:.2f}{"d"}_{scene.camera_height_angle:.2f}{"d"}_{"custom-image"}_{scene.smoothing}{"px"}_{scene.noise}{"%"}'    
+                    else:
+                        context.scene.render.filepath = f'{scene.image_dir}/{object.name}/{scene.camera_position_angle:.2f}{"d"}_{scene.camera_height_angle:.2f}{"d"}_{scene.r_color}{"r"}_{scene.g_color}{"g"}_{scene.b_color}{"b"}_{scene.smoothing}{"px"}_{scene.noise}{"%"}'    
                     bpy.ops.render.render(write_still=1)
                     self.set_scene.set_trace(camera.location)
 
         scene.camera_position_angle = 0
-        scene.camera_height_angle = 90
         bpy.ops.opr.default_rotation()
         self.set_camera.space_view()
 
@@ -215,7 +233,27 @@ class Opr_auto_execute(bpy.types.Operator):
                 bpy.ops.opr.default_rotation()
                 self.set_tracking.set_camera_tracking(camera)
                 self.set_tracking.set_light_tracking(light)
+                bpy.ops.opr.noise_filter()
                 bpy.ops.opr.start_render()
+
+
+class Opr_set_background_color(bpy.types.Operator):
+    bl_idname = "opr.set_background_color"
+    bl_label = "Set Background Color"
+
+    def __init__(self):
+        self.set_world = utils.SetWorld()
+
+    def execute(self, context):
+        scene = context.scene.custom_properties
+        r = scene.r_color
+        g = scene.g_color
+        b = scene.b_color
+
+        self.set_world.set_background_color(r, g, b)
+        scene.custom_image = False
+
+        return {'FINISHED'}
 
 
 class Opr_default_background_color(bpy.types.Operator):
@@ -251,24 +289,98 @@ class Opr_select_background_image(bpy.types.Operator):
         image_path = scene.background_dir
 
         self.set_world.set_background_image(image_path)
+        scene.custom_image = True
         
         return {'FINISHED'}
 
+class Opr_smoothing_filter(bpy.types.Operator):
+    bl_idname = "opr.smoothing_filter"
+    bl_label = "Apply Smoothing"
+
+    def __init__(self):
+        self.set_object = utils.SetObject()
+        self.set_camera = utils.SetCamera()
+        self.set_tracking = utils.SetTracking()
+        self.set_light = utils.SetLight()
+        self.set_scene = utils.SetScene()
+
+    def execute(self, context):
+        scene = context.scene
+        custom_props = scene.custom_properties
+        smoothing = custom_props.get('smoothing', None)
+
+        scene.render.filter_size = smoothing
+
+        return {'FINISHED'}
+    
+
+class Opr_noise_filter(bpy.types.Operator):
+    bl_idname = "opr.noise_filter"
+    bl_label = "Apply Material Noise"
+
+    def __init__(self):
+        self.set_object = utils.SetObject()
+        self.set_camera = utils.SetCamera()
+        self.set_tracking = utils.SetTracking()
+        self.set_light = utils.SetLight()
+        self.set_scene = utils.SetScene()
+
+    def execute(self, context):
+        scene = context.scene.custom_properties
+        object = self.set_object.selector(context)
+        noise = scene.noise
+        
+        if object.active_material is None:
+            mat = bpy.data.materials.new(name="BlurMaterial")
+            object.active_material = mat
+        else:
+            mat = object.active_material
+
+        mat.use_nodes = True
+        nodes = mat.node_tree.nodes
+        links = mat.node_tree.links
+
+        for node in nodes:
+            nodes.remove(node)
+
+        output_node = nodes.new(type="ShaderNodeOutputMaterial")
+        principled_node = nodes.new(type="ShaderNodeBsdfPrincipled")
+        tex_coord_node = nodes.new(type="ShaderNodeTexCoord")
+        mapping_node = nodes.new(type="ShaderNodeMapping")
+        noise_node = nodes.new(type="ShaderNodeTexNoise")
+
+        noise_node.inputs['Scale'].default_value = noise
+
+        links.new(tex_coord_node.outputs['Generated'], mapping_node.inputs['Vector'])
+        links.new(mapping_node.outputs['Vector'], noise_node.inputs['Vector'])
+        links.new(noise_node.outputs['Fac'], principled_node.inputs['Base Color'])
+        links.new(principled_node.outputs['BSDF'], output_node.inputs['Surface'])
+
+        return {'FINISHED'}
+        
 
 def register_operators():
+    bpy.utils.register_class(Opr_change_viewport)
     bpy.utils.register_class(Opr_import_object)
     bpy.utils.register_class(Opr_default_rotation)
     bpy.utils.register_class(Opr_start_render)
     bpy.utils.register_class(Opr_select_directory)
     bpy.utils.register_class(Opr_auto_execute)
     bpy.utils.register_class(Opr_default_background_color)
+    bpy.utils.register_class(Opr_set_background_color)
     bpy.utils.register_class(Opr_select_background_image)
+    bpy.utils.register_class(Opr_smoothing_filter)
+    bpy.utils.register_class(Opr_noise_filter)
 
 def unregister_operators():
+    bpy.utils.unregister_class(Opr_change_viewport)
     bpy.utils.unregister_class(Opr_import_object)
     bpy.utils.unregister_class(Opr_default_rotation)
     bpy.utils.unregister_class(Opr_start_render)
     bpy.utils.unregister_class(Opr_select_directory)
     bpy.utils.unregister_class(Opr_auto_execute)
     bpy.utils.unregister_class(Opr_default_background_color)
+    bpy.utils.unregister_class(Opr_set_background_color)
     bpy.utils.unregister_class(Opr_select_background_image)
+    bpy.utils.unregister_class(Opr_smoothing_filter)
+    bpy.utils.unregister_class(Opr_noise_filter)

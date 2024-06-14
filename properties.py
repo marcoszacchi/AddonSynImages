@@ -6,12 +6,14 @@ class CustomProperties(bpy.types.PropertyGroup):
     manual_exec_set: bpy.props.BoolProperty(default=False)#type: ignore
     trajectory: bpy.props.BoolProperty(default=False)#type: ignore
     transformations: bpy.props.BoolProperty(default=False)#type: ignore
+    filters: bpy.props.BoolProperty(default=False)#type: ignore
     background: bpy.props.BoolProperty(default=False)#type: ignore
     background_color: bpy.props.BoolProperty(default=False)#type: ignore
     background_image: bpy.props.BoolProperty(default=False)#type: ignore
     export: bpy.props.BoolProperty(default=False)#type: ignore
     multiple: bpy.props.BoolProperty(default=False)#type: ignore
     single: bpy.props.BoolProperty(default=False)#type: ignore
+    custom_image: bpy.props.BoolProperty(default=False)#type: ignore
 
     object_name : bpy.props.StringProperty(
         name="Object Name",
@@ -98,7 +100,7 @@ class CustomProperties(bpy.types.PropertyGroup):
         name="Camera Height",
         min = 0.0001,
         max = 180,
-        default=90,
+        default=45,
     )#type: ignore
 
     scaling_percentage : bpy.props.IntProperty(
@@ -157,6 +159,20 @@ class CustomProperties(bpy.types.PropertyGroup):
         min=0,
         max=255,
         default=13,
+    )#type: ignore
+
+    smoothing : bpy.props.FloatProperty(
+        name="Smoothing",
+        min=0,
+        max=10,
+        default=1.5,
+    )#type: ignore
+
+    noise : bpy.props.IntProperty(
+        name="Noise",
+        min=0,
+        max=100,
+        default=0,
     )#type: ignore
 
 def register_properties():

@@ -45,6 +45,7 @@ class VIEW3D_PT_synthetic_image_generator(bpy.types.Panel):
             row = box2.row()
             row.operator(operators.Opr_import_object.bl_idname)
         
+
         box3 = layout.box()
         icon = 'TRIA_DOWN' if scene.manual_exec_set else 'TRIA_RIGHT'
         row = box3.row()
@@ -77,6 +78,7 @@ class VIEW3D_PT_synthetic_image_generator(bpy.types.Panel):
             row.operator(operators.Opr_default_rotation.bl_idname, icon='DRIVER_ROTATIONAL_DIFFERENCE')
             row = box3.row()
         
+
         box4 = layout.box()
         icon = 'TRIA_DOWN' if scene.trajectory else 'TRIA_RIGHT'
         row = box4.row()
@@ -109,7 +111,7 @@ class VIEW3D_PT_synthetic_image_generator(bpy.types.Panel):
                 row = box4.row()
                 col1 = row.column()
                 col1.scale_x = 1.1
-                col1.label(text="Horizontal Steps", icon='SPHERE')
+                col1.label(text="H. Steps", icon='SPHERE')
                 col2 = row.column()
                 col2.prop(scene, "horizontal_rotation_steps", text="")
 
@@ -157,12 +159,41 @@ class VIEW3D_PT_synthetic_image_generator(bpy.types.Panel):
 
 
         box6 = layout.box()
-        icon = 'TRIA_DOWN' if scene.background else 'TRIA_RIGHT'
+        icon = 'TRIA_DOWN' if scene.filters else 'TRIA_RIGHT'
         row = box6.row()
+        row.prop(scene, "filters", text="Filters", icon=icon, emboss=False)
+
+        if scene.filters:
+            row = box6.row()
+            col1 = row.column()
+            col1.scale_x = 0.9
+            col1.label(text="Blur", icon='FOLDER_REDIRECT')
+            col2 = row.column()
+            col2.prop(scene, "smoothing", text="px")
+
+            row = box6.row()
+            row.operator(operators.Opr_smoothing_filter.bl_idname, icon='DRIVER_ROTATIONAL_DIFFERENCE')
+            row = box6.row()
+
+            row = box6.row()
+            col1 = row.column()
+            col1.scale_x = 0.9
+            col1.label(text="Noise", icon='FOLDER_REDIRECT')
+            col2 = row.column()
+            col2.prop(scene, "noise", text="%")
+
+            row = box6.row()
+            row.operator(operators.Opr_noise_filter.bl_idname, icon='DRIVER_ROTATIONAL_DIFFERENCE')
+            row = box6.row()
+
+
+        box7 = layout.box()
+        icon = 'TRIA_DOWN' if scene.background else 'TRIA_RIGHT'
+        row = box7.row()
         row.prop(scene, "background", text="Background", icon=icon, emboss=False)
 
         if scene.background:
-            row = box6.row()
+            row = box7.row()
             col1 = row.column()
             col1.scale_x = 1.2
             col1.label(text="Background Type", icon='OUTLINER_DATA_CURVE')
@@ -170,73 +201,77 @@ class VIEW3D_PT_synthetic_image_generator(bpy.types.Panel):
             col2.prop(scene, "background_type")
 
             if scene.background_type == 'solid_color':
-                row = box6.row()
+                row = box7.row()
                 col1 = row.column()
                 col1.scale_x = 1.1
                 col1.label(text="Red", icon='SEQUENCE_COLOR_01')
                 col2 = row.column()
                 col2.prop(scene, "r_color", text="")
                 
-                row = box6.row()
+                row = box7.row()
                 col1 = row.column()
                 col1.scale_x = 1.1
                 col1.label(text="Green", icon='SEQUENCE_COLOR_04')
                 col2 = row.column()
                 col2.prop(scene, "g_color", text="")
                 
-                row = box6.row()
+                row = box7.row()
                 col1 = row.column()
                 col1.scale_x = 1.1
                 col1.label(text="Blue", icon='SEQUENCE_COLOR_05')
                 col2 = row.column()
                 col2.prop(scene, "b_color", text="")
 
-                row = box6.row()
+                row = box7.row()
+                row.operator(operators.Opr_set_background_color.bl_idname, text="Apply")
+
+                row = box7.row()
                 row.operator(operators.Opr_default_background_color.bl_idname, text="Default")
 
             if scene.background_type == 'image':
-                row = box6.row()
+                row = box7.row()
                 col1 = row.column()
                 col1.scale_x = 0.9
                 col1.label(text="Source", icon='IMAGE_RGB')
                 col2 = row.column()
                 col2.prop(scene, "background_dir")
 
-                row = box6.row()
+                row = box7.row()
                 row.operator(operators.Opr_select_background_image.bl_idname, text="Apply")
 
-        box7 = layout.box()
+
+        box8 = layout.box()
         icon = 'TRIA_DOWN' if scene.export else 'TRIA_RIGHT'
-        row = box7.row()
+        row = box8.row()
         row.prop(scene, "export", text="Export", icon=icon, emboss=False)
 
         if scene.export:
-            row = box7.row()
+            row = box8.row()
             row.label(text="Image Path", icon='FILEBROWSER')
             
-            row = box7.row()
+            row = box8.row()
             row.prop(scene, "image_dir")
             
 
-            box8 = layout.box()
+            box9 = layout.box()
             icon = 'TRIA_DOWN' if scene.multiple else 'TRIA_RIGHT'
-            row = box8.row()
+            row = box9.row()
             row.prop(scene, "multiple", text="Multiple Synthesize", icon=icon, emboss=False)
 
             if scene.multiple:
-                row = box8.row()
+                row = box9.row()
                 row.operator(operators.Opr_auto_execute.bl_idname, icon='RESTRICT_RENDER_OFF')
             
-            box9 = layout.box()
+            box10 = layout.box()
             icon = 'TRIA_DOWN' if scene.single else 'TRIA_RIGHT'
-            row = box9.row()
+            row = box10.row()
             row.prop(scene, "single", text="Single Synthesize", icon=icon, emboss=False)
             
             if scene.single:
-                row = box9.row()
+                row = box10.row()
                 row.operator(operators.Opr_start_render.bl_idname, icon='RESTRICT_RENDER_OFF')
         
-            row = box7.row()
+            row = box8.row()
 
 def register_panels():
     bpy.utils.register_class(VIEW3D_PT_synthetic_image_generator)
