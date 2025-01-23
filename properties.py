@@ -5,6 +5,8 @@ class CustomProperties(bpy.types.PropertyGroup):
     manual_exec: bpy.props.BoolProperty(default=False)#type: ignore
     manual_exec_set: bpy.props.BoolProperty(default=False)#type: ignore
     trajectory: bpy.props.BoolProperty(default=False)#type: ignore
+    texture: bpy.props.BoolProperty(default=False)#type: ignore
+    texture_scale: bpy.props.BoolProperty(default=False)#type: ignore
     transformations: bpy.props.BoolProperty(default=False)#type: ignore
     filters: bpy.props.BoolProperty(default=False)#type: ignore
     background: bpy.props.BoolProperty(default=False)#type: ignore
@@ -19,7 +21,7 @@ class CustomProperties(bpy.types.PropertyGroup):
         name="Object Name",
         description="Name of the object",
         default="",
-        maxlen=1024  # Opcional: limita o comprimento máximo da string
+        maxlen=1024
     )#type: ignore
 
     cam_trajectory : bpy.props.EnumProperty(
@@ -45,6 +47,101 @@ class CustomProperties(bpy.types.PropertyGroup):
         default="",
         maxlen=1024,
         subtype='FILE_PATH'
+    )#type: ignore
+
+    texture_dir : bpy.props.StringProperty(
+        name="",
+        description="Directory to import texture",
+        default="",
+        maxlen=1024,
+        subtype='DIR_PATH'
+    )#type: ignore
+
+    texture_name : bpy.props.StringProperty(
+        name="Texture Name",
+        description="Name of the texture folder",
+        default="",
+        maxlen=1024
+    )#type: ignore
+
+    texture_scale : bpy.props.FloatProperty(
+        name="Texture Scale Value",
+        description="Scale for the displacement node",
+        min=0,
+        max=200,
+        default=100,
+    )#type: ignore
+
+    texture_location_x : bpy.props.FloatProperty(
+        name="Texture Scale Value",
+        description="Scale for the displacement node",
+        min=-10,
+        max=10.,
+        default=0,
+    )#type: ignore
+    
+    texture_location_y : bpy.props.FloatProperty(
+        name="Texture Scale Value",
+        description="Scale for the displacement node",
+        min=-10,
+        max=10.,
+        default=0,
+    )#type: ignore
+    
+    texture_location_z : bpy.props.FloatProperty(
+        name="Texture Scale Value",
+        description="Scale for the displacement node",
+        min=-10,
+        max=10.,
+        default=0,
+    )#type: ignore
+
+    texture_rotation_x : bpy.props.FloatProperty(
+        name="Texture Scale Value",
+        description="Scale for the displacement node",
+        min=-180,
+        max=180,
+        default=0,
+    )#type: ignore
+    
+    texture_rotation_y : bpy.props.FloatProperty(
+        name="Texture Scale Value",
+        description="Scale for the displacement node",
+        min=-180,
+        max=180,
+        default=0,
+    )#type: ignore
+    
+    texture_rotation_z : bpy.props.FloatProperty(
+        name="Texture Scale Value",
+        description="Scale for the displacement node",
+        min=-180,
+        max=180,
+        default=0,
+    )#type: ignore
+
+    texture_scale_x : bpy.props.FloatProperty(
+        name="Texture Scale Value",
+        description="Scale for the displacement node",
+        min=0,
+        max=200,
+        default=100,
+    )#type: ignore
+    
+    texture_scale_y : bpy.props.FloatProperty(
+        name="Texture Scale Value",
+        description="Scale for the displacement node",
+        min=0,
+        max=200,
+        default=100,
+    )#type: ignore
+    
+    texture_scale_z : bpy.props.FloatProperty(
+        name="Texture Scale Value",
+        description="Scale for the displacement node",
+        min=0,
+        max=200,
+        default=100,
     )#type: ignore
 
     object_rotation_x : bpy.props.FloatProperty(

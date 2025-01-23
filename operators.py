@@ -45,8 +45,8 @@ class Opr_select_directory(bpy.types.Operator):
     def select_file(self, context, scene, camera, light, object_path):
         for file in os.listdir(object_path):
             if file.endswith(".stl") or file.endswith(".STL"):
-                filepath = os.path.join(object_path, file)
-                bpy.ops.import_mesh.stl(filepath=filepath)
+                filepath = os.path.join(object_path, file)  
+                bpy.ops.wm.stl_import(filepath=filepath)
                 object = self.set_object.selector(context)
                 scene.object_name = object.name
                 self.set_object.set_origin(object)
@@ -92,7 +92,7 @@ class Opr_import_object(bpy.types.Operator):
     
     def manual_import(self, context, scene, camera, light, file):
         if file.endswith(".stl") or file.endswith(".STL"):
-            bpy.ops.import_mesh.stl(filepath=file)
+            bpy.ops.wm.stl_import(filepath=file)
             object = self.set_object.selector(context)
             scene.object_name = object.name
             self.set_scene.delete_trace()
@@ -109,7 +109,148 @@ class Opr_import_object(bpy.types.Operator):
             bpy.ops.opr.default_background_color()
             bpy.ops.opr.change_viewport()
 
+    
+class Opr_import_texture(bpy.types.Operator):
+    bl_idname = "opr.import_texture"
+    bl_label = "Import Texture"
+    
+    def __init__(self):
+        self.set_object = utils.SetObject()
+        self.set_camera = utils.SetCamera()
+        self.set_tracking = utils.SetTracking()
+        self.set_light = utils.SetLight()
+        self.set_scene = utils.SetScene()
+        self.set_render = utils.SetRender()
 
+    def execute(self, context):
+        scene = context.scene.custom_properties
+        obj = self.set_object.selector(context)
+        directory = scene.texture_dir
+        texture_name = os.path.basename(os.path.normpath(directory))
+        scene.texture_name = texture_name
+        scene.texture_scale = 100
+        scene.texture_location_x = 0
+        scene.texture_location_y = 0
+        scene.texture_location_z = 0
+        scene.texture_rotation_x = 0
+        scene.texture_rotation_y = 0
+        scene.texture_rotation_z = 0
+        scene.texture_scale_x = 100
+        scene.texture_scale_y = 100
+        scene.texture_scale_z = 100
+
+        if not directory or not os.path.isdir(directory):
+            return {"CANCELLED"}
+
+        texture_files = self.check_texture_files(directory)
+        self.setup_material(context, texture_files)
+        self.apply_smart_uv_unwrap(obj)
+
+        return {"FINISHED"}
+
+    def check_texture_files(self, directory):
+        texture_files = {
+            "Color": None,
+            "Roughness": None,
+            "Metalness": None,
+            "NormalDX": None,
+            "Displacement": None
+        }
+        
+        for file in os.listdir(directory):
+            file_lower = file.lower()
+            if "color" in file_lower:
+                texture_files["Color"] = os.path.join(directory, file)
+            elif "roughness" in file_lower:
+                texture_files["Roughness"] = os.path.join(directory, file)
+            elif "metalness" in file_lower:
+                texture_files["Metalness"] = os.path.join(directory, file)
+            elif "normaldx" in file_lower:
+                texture_files["NormalDX"] = os.path.join(directory, file)
+            elif "displacement" in file_lower:
+                texture_files["Displacement"] = os.path.join(directory, file)
+
+        return texture_files
+
+    def create_texture_node(self, nodes, label, location, filepath, color_space='COLOR'):
+        tex_node = nodes.new(type='ShaderNodeTexImage')
+        tex_node.location = location
+        tex_node.label = label
+        tex_node.image = bpy.data.images.load(filepath)
+        if color_space == 'Non-Color':
+            tex_node.image.colorspace_settings.name = 'Non-Color'
+        return tex_node
+
+    def setup_material(self, context, texture_files):
+        obj = context.active_object
+        material = None
+
+        if not obj.data.materials:
+            material = bpy.data.materials.new(name="Material")
+            obj.data.materials.append(material)
+        else:
+            material = obj.active_material
+
+        material.use_nodes = True
+        nodes = material.node_tree.nodes
+        links = material.node_tree.links
+
+        for node in nodes:
+            nodes.remove(node)
+
+        tex_coord = nodes.new(type='ShaderNodeTexCoord')
+        tex_coord.location = (-1200, 0)
+
+        mapping = nodes.new(type='ShaderNodeMapping')
+        mapping.location = (-1000, 0)
+        links.new(tex_coord.outputs['UV'], mapping.inputs['Vector'])
+
+        principled_bsdf = nodes.new(type='ShaderNodeBsdfPrincipled')
+        principled_bsdf.location = (400, 0)
+
+        material_output = nodes.new(type='ShaderNodeOutputMaterial')
+        material_output.location = (800, 0)
+        links.new(principled_bsdf.outputs['BSDF'], material_output.inputs['Surface'])
+
+        if texture_files["Color"]:
+            tex_base_color = self.create_texture_node(nodes, "Base Color", (-600, 300), texture_files["Color"])
+            links.new(mapping.outputs['Vector'], tex_base_color.inputs['Vector'])
+            links.new(tex_base_color.outputs['Color'], principled_bsdf.inputs['Base Color'])
+
+        if texture_files["Roughness"]:
+            tex_roughness = self.create_texture_node(nodes, "Roughness", (-600, 150), texture_files["Roughness"], color_space='Non-Color')
+            links.new(mapping.outputs['Vector'], tex_roughness.inputs['Vector'])
+            links.new(tex_roughness.outputs['Color'], principled_bsdf.inputs['Roughness'])
+
+        if texture_files["Metalness"]:
+            tex_metallic = self.create_texture_node(nodes, "Metallic", (-600, 0), texture_files["Metalness"], color_space='Non-Color')
+            links.new(mapping.outputs['Vector'], tex_metallic.inputs['Vector'])
+            links.new(tex_metallic.outputs['Color'], principled_bsdf.inputs['Metallic'])
+
+        if texture_files["NormalDX"]:
+            tex_normal = self.create_texture_node(nodes, "Normal", (-600, -150), texture_files["NormalDX"], color_space='Non-Color')
+            normal_map = nodes.new(type='ShaderNodeNormalMap')
+            normal_map.location = (-200, -150)
+            links.new(mapping.outputs['Vector'], tex_normal.inputs['Vector'])
+            links.new(tex_normal.outputs['Color'], normal_map.inputs['Color'])
+            links.new(normal_map.outputs['Normal'], principled_bsdf.inputs['Normal'])
+
+        if texture_files["Displacement"]:
+            tex_displacement = self.create_texture_node(nodes, "Displacement", (-600, -300), texture_files["Displacement"], color_space='Non-Color')
+            displacement = nodes.new(type='ShaderNodeDisplacement')
+            displacement.location = (400, -300)
+            links.new(mapping.outputs['Vector'], tex_displacement.inputs['Vector'])
+            links.new(tex_displacement.outputs['Color'], displacement.inputs['Height'])
+            links.new(displacement.outputs['Displacement'], material_output.inputs['Displacement'])
+
+    def apply_smart_uv_unwrap(self, obj):
+        if obj.type == 'MESH':
+            bpy.ops.object.mode_set(mode='EDIT')
+            bpy.ops.mesh.select_all(action='SELECT')
+            bpy.ops.uv.smart_project()
+            bpy.ops.object.mode_set(mode='OBJECT')
+
+    
 class Opr_default_rotation(bpy.types.Operator):
     bl_idname = "opr.default_rotation"
     bl_label = "Default Rotation"
@@ -165,10 +306,18 @@ class Opr_start_render(bpy.types.Operator):
                     scene.camera_position_angle = h_pic * h_angle
                     light.location = camera.location
                     self.set_light.set_light(light)
+                    
                     if scene.custom_image:
-                        context.scene.render.filepath = f'{scene.image_dir}/{object.name}/{scene.camera_position_angle:.2f}{"d"}_{scene.camera_height_angle:.2f}{"d"}_{"custom-image"}_{scene.smoothing}{"px"}_{scene.noise}{"%"}'    
+                        if scene.texture:
+                            context.scene.render.filepath = f'{scene.image_dir}/{object.name}_{scene.texture_name}/{object.name}_{scene.camera_position_angle:.2f}{"d"}_{scene.camera_height_angle:.2f}{"d"}_{"custom-image"}_{scene.smoothing}{"px"}_{scene.noise}{"%"}'    
+                        else:
+                            context.scene.render.filepath = f'{scene.image_dir}/{object.name}/{object.name}_{scene.camera_position_angle:.2f}{"d"}_{scene.camera_height_angle:.2f}{"d"}_{"custom-image"}_{scene.smoothing}{"px"}_{scene.noise}{"%"}'
                     else:
-                        context.scene.render.filepath = f'{scene.image_dir}/{object.name}/{scene.camera_position_angle:.2f}{"d"}_{scene.camera_height_angle:.2f}{"d"}_{scene.r_color}{"r"}_{scene.g_color}{"g"}_{scene.b_color}{"b"}_{scene.smoothing}{"px"}_{scene.noise}{"%"}'
+                        if scene.texture:
+                            context.scene.render.filepath = f'{scene.image_dir}/{object.name}_{scene.texture_name}/{object.name}_{scene.camera_position_angle:.2f}{"d"}_{scene.camera_height_angle:.2f}{"d"}_{scene.r_color}{"r"}_{scene.g_color}{"g"}_{scene.b_color}{"b"}_{scene.smoothing}{"px"}_{scene.noise}{"%"}'
+                        else:
+                            context.scene.render.filepath = f'{scene.image_dir}/{object.name}/{object.name}_{scene.camera_position_angle:.2f}{"d"}_{scene.camera_height_angle:.2f}{"d"}_{scene.r_color}{"r"}_{scene.g_color}{"g"}_{scene.b_color}{"b"}_{scene.smoothing}{"px"}_{scene.noise}{"%"}'
+                    
                     bpy.ops.render.render(write_still=1)
                     self.set_scene.set_trace(camera.location)
         
@@ -182,10 +331,18 @@ class Opr_start_render(bpy.types.Operator):
                 for h_pic in range(h_qnt):
                     scene.camera_position_angle = h_pic * h_angle
                     light.location = camera.location
+                    
                     if scene.custom_image:
-                        context.scene.render.filepath = f'{scene.image_dir}/{object.name}/{scene.camera_position_angle:.2f}{"d"}_{scene.camera_height_angle:.2f}{"d"}_{"custom-image"}_{scene.smoothing}{"px"}_{scene.noise}{"%"}'    
+                        if scene.texture:
+                            context.scene.render.filepath = f'{scene.image_dir}/{object.name}_{scene.texture_name}/{object.name}_{scene.camera_position_angle:.2f}{"d"}_{scene.camera_height_angle:.2f}{"d"}_{"custom-image"}_{scene.smoothing}{"px"}_{scene.noise}{"%"}'    
+                        else:
+                            context.scene.render.filepath = f'{scene.image_dir}/{object.name}/{object.name}_{scene.camera_position_angle:.2f}{"d"}_{scene.camera_height_angle:.2f}{"d"}_{"custom-image"}_{scene.smoothing}{"px"}_{scene.noise}{"%"}'
                     else:
-                        context.scene.render.filepath = f'{scene.image_dir}/{object.name}/{scene.camera_position_angle:.2f}{"d"}_{scene.camera_height_angle:.2f}{"d"}_{scene.r_color}{"r"}_{scene.g_color}{"g"}_{scene.b_color}{"b"}_{scene.smoothing}{"px"}_{scene.noise}{"%"}'    
+                        if scene.texture:
+                            context.scene.render.filepath = f'{scene.image_dir}/{object.name}_{scene.texture_name}/{object.name}_{scene.camera_position_angle:.2f}{"d"}_{scene.camera_height_angle:.2f}{"d"}_{scene.r_color}{"r"}_{scene.g_color}{"g"}_{scene.b_color}{"b"}_{scene.smoothing}{"px"}_{scene.noise}{"%"}'
+                        else:
+                            context.scene.render.filepath = f'{scene.image_dir}/{object.name}/{object.name}_{scene.camera_position_angle:.2f}{"d"}_{scene.camera_height_angle:.2f}{"d"}_{scene.r_color}{"r"}_{scene.g_color}{"g"}_{scene.b_color}{"b"}_{scene.smoothing}{"px"}_{scene.noise}{"%"}'    
+                    
                     bpy.ops.render.render(write_still=1)
                     self.set_scene.set_trace(camera.location)
 
@@ -224,7 +381,7 @@ class Opr_auto_execute(bpy.types.Operator):
                     self.set_scene.delete_trace()
 
                 filepath = os.path.join(object_path, file)
-                bpy.ops.import_mesh.stl(filepath=filepath)
+                bpy.ops.wm.stl_import(filepath=filepath)
                 object = self.set_object.selector(context)
                 scene.object_name = object.name
                 self.set_object.set_origin(object)
@@ -233,7 +390,7 @@ class Opr_auto_execute(bpy.types.Operator):
                 bpy.ops.opr.default_rotation()
                 self.set_tracking.set_camera_tracking(camera)
                 self.set_tracking.set_light_tracking(light)
-                bpy.ops.opr.noise_filter()
+                bpy.ops.opr.import_texture()
                 bpy.ops.opr.start_render()
 
 
@@ -312,56 +469,12 @@ class Opr_smoothing_filter(bpy.types.Operator):
         scene.render.filter_size = smoothing
 
         return {'FINISHED'}
-    
 
-class Opr_noise_filter(bpy.types.Operator):
-    bl_idname = "opr.noise_filter"
-    bl_label = "Apply Material Noise"
-
-    def __init__(self):
-        self.set_object = utils.SetObject()
-        self.set_camera = utils.SetCamera()
-        self.set_tracking = utils.SetTracking()
-        self.set_light = utils.SetLight()
-        self.set_scene = utils.SetScene()
-
-    def execute(self, context):
-        scene = context.scene.custom_properties
-        object = self.set_object.selector(context)
-        noise = scene.noise
-        
-        if object.active_material is None:
-            mat = bpy.data.materials.new(name="BlurMaterial")
-            object.active_material = mat
-        else:
-            mat = object.active_material
-
-        mat.use_nodes = True
-        nodes = mat.node_tree.nodes
-        links = mat.node_tree.links
-
-        for node in nodes:
-            nodes.remove(node)
-
-        output_node = nodes.new(type="ShaderNodeOutputMaterial")
-        principled_node = nodes.new(type="ShaderNodeBsdfPrincipled")
-        tex_coord_node = nodes.new(type="ShaderNodeTexCoord")
-        mapping_node = nodes.new(type="ShaderNodeMapping")
-        noise_node = nodes.new(type="ShaderNodeTexNoise")
-
-        noise_node.inputs['Scale'].default_value = noise
-
-        links.new(tex_coord_node.outputs['Generated'], mapping_node.inputs['Vector'])
-        links.new(mapping_node.outputs['Vector'], noise_node.inputs['Vector'])
-        links.new(noise_node.outputs['Fac'], principled_node.inputs['Base Color'])
-        links.new(principled_node.outputs['BSDF'], output_node.inputs['Surface'])
-
-        return {'FINISHED'}
-        
 
 def register_operators():
     bpy.utils.register_class(Opr_change_viewport)
     bpy.utils.register_class(Opr_import_object)
+    bpy.utils.register_class(Opr_import_texture)
     bpy.utils.register_class(Opr_default_rotation)
     bpy.utils.register_class(Opr_start_render)
     bpy.utils.register_class(Opr_select_directory)
@@ -370,11 +483,11 @@ def register_operators():
     bpy.utils.register_class(Opr_set_background_color)
     bpy.utils.register_class(Opr_select_background_image)
     bpy.utils.register_class(Opr_smoothing_filter)
-    bpy.utils.register_class(Opr_noise_filter)
 
 def unregister_operators():
     bpy.utils.unregister_class(Opr_change_viewport)
     bpy.utils.unregister_class(Opr_import_object)
+    bpy.utils.unregister_class(Opr_import_texture)
     bpy.utils.unregister_class(Opr_default_rotation)
     bpy.utils.unregister_class(Opr_start_render)
     bpy.utils.unregister_class(Opr_select_directory)
@@ -383,4 +496,3 @@ def unregister_operators():
     bpy.utils.unregister_class(Opr_set_background_color)
     bpy.utils.unregister_class(Opr_select_background_image)
     bpy.utils.unregister_class(Opr_smoothing_filter)
-    bpy.utils.unregister_class(Opr_noise_filter)

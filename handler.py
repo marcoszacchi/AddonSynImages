@@ -55,7 +55,80 @@ def update_camera_clip(scene, context):
     if camera is not None:
         camera.data.clip_start = 0.1
         camera.data.clip_end = camera.location.length * 1.5
+
+def update_texture_depth(scene):
+    obj = scene.objects.get(scene.custom_properties.object_name)
     
+    if obj and obj.active_material:
+        material = obj.active_material
+        nodes = material.node_tree.nodes
+
+        displacement_node = None
+
+        for node in nodes:
+            if isinstance(node, bpy.types.ShaderNodeDisplacement):
+                displacement_node = node
+                break
+
+        if displacement_node:
+            texture_scale = scene.custom_properties.texture_scale
+            displacement_node.inputs['Scale'].default_value = texture_scale / 100
+
+def update_texture_location(scene):
+    obj = scene.objects.get(scene.custom_properties.object_name)
+    
+    if obj and obj.active_material:
+        material = obj.active_material
+        nodes = material.node_tree.nodes
+
+        mapping_node = None
+        for node in nodes:
+            if isinstance(node, bpy.types.ShaderNodeMapping):
+                mapping_node = node
+                break
+
+        if mapping_node:
+            mapping_node.inputs['Location'].default_value[0] = scene.custom_properties.texture_location_x / 100
+            mapping_node.inputs['Location'].default_value[1] = scene.custom_properties.texture_location_y / 100
+            mapping_node.inputs['Location'].default_value[2] = scene.custom_properties.texture_location_z / 100
+    
+def update_texture_rotation(scene):
+    obj = scene.objects.get(scene.custom_properties.object_name)
+    
+    if obj and obj.active_material:
+        material = obj.active_material
+        nodes = material.node_tree.nodes
+
+        mapping_node = None
+        for node in nodes:
+            if isinstance(node, bpy.types.ShaderNodeMapping):
+                mapping_node = node
+                break
+
+        if mapping_node:
+            mapping_node.inputs['Rotation'].default_value[0] = np.deg2rad(scene.custom_properties.texture_rotation_x)
+            mapping_node.inputs['Rotation'].default_value[1] = np.deg2rad(scene.custom_properties.texture_rotation_y)
+            mapping_node.inputs['Rotation'].default_value[2] = np.deg2rad(scene.custom_properties.texture_rotation_z)
+
+def update_texture_scale(scene):
+    obj = scene.objects.get(scene.custom_properties.object_name)
+    
+    if obj and obj.active_material:
+        material = obj.active_material
+        nodes = material.node_tree.nodes
+
+        mapping_node = None
+        for node in nodes:
+            if isinstance(node, bpy.types.ShaderNodeMapping):
+                mapping_node = node
+                break
+
+        if mapping_node:
+            mapping_node.inputs['Scale'].default_value[0] = scene.custom_properties.texture_scale_x / 100
+            mapping_node.inputs['Scale'].default_value[1] = scene.custom_properties.texture_scale_y / 100
+            mapping_node.inputs['Scale'].default_value[2] = scene.custom_properties.texture_scale_z / 100
+    
+
 def register_handler():
     bpy.app.handlers.depsgraph_update_post.append(update_object_rotation)
     bpy.app.handlers.depsgraph_update_post.append(update_object_scale)
@@ -63,6 +136,10 @@ def register_handler():
     bpy.app.handlers.depsgraph_update_post.append(update_camera_position)
     bpy.app.handlers.depsgraph_update_post.append(update_light)
     bpy.app.handlers.depsgraph_update_post.append(update_camera_clip)
+    bpy.app.handlers.depsgraph_update_post.append(update_texture_depth)
+    bpy.app.handlers.depsgraph_update_post.append(update_texture_location)
+    bpy.app.handlers.depsgraph_update_post.append(update_texture_rotation)
+    bpy.app.handlers.depsgraph_update_post.append(update_texture_scale)
 
 def unregister_handler():
     for handler in bpy.app.handlers.render_complete:
@@ -72,3 +149,7 @@ def unregister_handler():
         bpy.app.handlers.render_complete.remove(update_camera_position)
         bpy.app.handlers.render_complete.remove(update_light)
         bpy.app.handlers.render_complete.remove(update_camera_clip)
+        bpy.app.handlers.render_complete.remove(update_texture_depth)
+        bpy.app.handlers.render_complete.remove(update_texture_location)
+        bpy.app.handlers.render_complete.remove(update_texture_rotation)
+        bpy.app.handlers.render_complete.remove(update_texture_scale)
